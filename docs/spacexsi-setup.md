@@ -23,6 +23,8 @@ Don't overbuild this — the raffle is about using both tools and describing it 
 ## What to write in Devpost (copy-paste starter)
 "We built VoiceBridge SD in Cursor as our core AI coding agent — Cursor helped scaffold the Next.js app, Neon schema, and Gemini prompts. Grok Bot automates our workflow by watching the repo and summarizing new Bright Data scrapes and triaging issues, so our solo team stays in sync. We used Cursor + Grok Bot throughout the weekend."
 
+Pick the auto-summarize-scrapes automation as the one to claim — it matches our actual commit history (scrape + seed commits). After the workshop, confirm Cursor Pro + Grok Bot are actually installed before submitting this paragraph as fact, then opt in to the "Make it Legendary with SpaceXSI" raffle on Devpost when you submit.
+
 ## Workshop
 Sat 2:45-3:15 PM, WLH 2207 — "Your Hackathon A-Team with SpaceXSI"
 Go with your laptop, get the promo code sorted live, don't try to figure out Grok Bot alone.
