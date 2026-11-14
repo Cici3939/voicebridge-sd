@@ -1,3 +1,4 @@
+import '../lib/env';
 import { neon } from '@neondatabase/serverless';
 import seed from '../data/seed.json';
 

@@ -1,6 +1,7 @@
 // VoiceBridge SD — core helpers
 // Bright Data + Neon + Gemini + ElevenLabs in one file so it's easy to copy into your repo
 
+import './env';
 import { neon } from '@neondatabase/serverless';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 

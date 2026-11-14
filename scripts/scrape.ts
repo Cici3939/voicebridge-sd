@@ -4,6 +4,7 @@
 // Start with 2-3 sources, verify one works end-to-end before adding more.
 // If a source fails or yields nothing, seeded Neon data stays as fallback —
 // the demo never shows an empty screen.
+import '../lib/env';
 import { scrapeWithBrightData, extractListingsFromHtml, upsertResources } from '../lib/voicebridge';
 
 const SOURCES: { url: string; type: 'food' | 'shelter' | 'clinic' }[] = [
