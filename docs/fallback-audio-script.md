@@ -1,6 +1,6 @@
 # Fallback Audio Script — Use if live ElevenLabs TTS fails
 
-Record these once with ElevenLabs (or your phone) before judging. Play the file if live TTS flakes.
+> DONE Sat 2:45pm: all 3 takes are recorded as MP3s in `public/fallback-audio/` (food.mp3, shelter.mp3, clinic.mp3) and wired into `app/page.tsx` — when `/api/ask` returns no audio, the page plays the matching file for the query type and shows a small "pre-recorded answer" note. Re-record with ElevenLabs later only if you want the ElevenLabs voice instead.
 
 ## Take 1 — Food near La Jolla (use for video + live demo backup)
 "Closest option is the San Diego Food Bank, at 9850 Distribution Avenue in San Diego. Check their website for today's distribution hours. You can also call 211 any time for free help in San Diego County."

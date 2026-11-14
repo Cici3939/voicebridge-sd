@@ -7,6 +7,7 @@ export default function Home() {
   const [resources, setResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [fallbackAudio, setFallbackAudio] = useState(false);
   const [listening, setListening] = useState(false);
   const [micSupported, setMicSupported] = useState(false);
 
@@ -50,7 +51,16 @@ export default function Home() {
         const blob = new Blob([Uint8Array.from(atob(data.audioBase64), (c) => c.charCodeAt(0))], { type: 'audio/mpeg' });
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
+        setFallbackAudio(false);
         new Audio(url).play();
+      } else {
+        // Live TTS flaked — play the pre-recorded fallback for this type
+        // (public/fallback-audio/*.mp3) so the demo still speaks.
+        const t = (data.parsed && data.parsed.type) || 'food';
+        const url = `/fallback-audio/${t}.mp3`;
+        setAudioUrl(url);
+        setFallbackAudio(true);
+        new Audio(url).play().catch(() => {});
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') {
@@ -90,6 +100,7 @@ export default function Home() {
         <div style={{ marginTop: 24, padding: 20, background: '#f0f7ff', borderRadius: 12 }}>
           <h2>Answer</h2>
           <p style={{ fontSize: 18, lineHeight: 1.5 }}>{answer}</p>
+          {fallbackAudio && <p style={{ fontSize: 13, color: '#666' }}>Playing a pre-recorded answer — live voice is unavailable right now.</p>}
           {audioUrl && <audio controls src={audioUrl} style={{ width: '100%' }} />}
         </div>
       )}
