@@ -41,7 +41,7 @@ Return: {"type": "food" | "shelter" | "clinic", "area": "La Jolla" | "Downtown" 
 Areas must come from that list. "near La Jolla" → area "La Jolla". "near City Heights" → area "City Heights".
 If unclear, type is "food" and area is null.
 `;
-    const result = await withTimeout(model.generateContent(prompt), 12000);
+    const result = await withTimeout(model.generateContent(prompt), 5000);
     return JSON.parse(result.response.text().replace(/```json|```/g, '').trim());
   } catch (e) {
     console.error('parseQuery fell back to keywords:', (e as Error)?.message);
@@ -71,7 +71,7 @@ Start with the closest/best option. Give name, address, and hours.
 Keep it under 80 words. No bullet points, just sentences to be read out loud.
 If no resources, say so kindly and suggest calling 211.
 `;
-    const result = await withTimeout(model.generateContent(prompt), 12000);
+    const result = await withTimeout(model.generateContent(prompt), 5000);
     return result.response.text().trim();
   } catch (e) {
     console.error('summarizeResources fell back to template:', (e as Error)?.message);
