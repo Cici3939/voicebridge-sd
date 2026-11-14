@@ -1,5 +1,7 @@
 # Judge Pitches — 3 min present + 2 min Q&A each
 
+> STATUS Sat 2:45pm: demo works end to end (~11 sec, speaks out loud), mic button added (Chrome/Edge Web Speech API — judge can speak their own query). Bright Data live scrape still blocked on the missing `voicebridge_sd` zone — if it's still blocked at judging, show the seeded real listings + scraper logs and say so honestly.
+
 You get a different judge per track. Don't give the same pitch to everyone. Lead with what THEY care about.
 
 ## 1. Bright Data judge — Data for Good ($1,000 / $750 / $500)

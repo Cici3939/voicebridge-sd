@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [query, setQuery] = useState('I need free food near La Jolla today');
@@ -7,6 +7,29 @@ export default function Home() {
   const [resources, setResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const [micSupported, setMicSupported] = useState(false);
+
+  useEffect(() => {
+    setMicSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  }, []);
+
+  // Browser speech-to-text (Web Speech API, Chrome/Edge). Fills the input
+  // with what the user said — they still tap "Ask out loud" to get the
+  // spoken answer, so a mic failure can never break the demo.
+  function listen() {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang = 'en-US';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e: any) => setQuery(e.results[0][0].transcript);
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    setListening(true);
+    rec.start();
+  }
 
   async function ask() {
     setLoading(true);
@@ -53,9 +76,15 @@ export default function Home() {
         <button onClick={ask} disabled={loading} style={{ flex: 1, padding: 16, fontSize: 18, borderRadius: 12, background: '#111', color: '#fff', cursor: 'pointer' }}>
           {loading ? 'Finding help…' : '🔊 Ask out loud'}
         </button>
+        {micSupported && (
+          <button onClick={listen} disabled={listening} style={{ padding: 16, borderRadius: 12 }}>
+            {listening ? '🎤 Listening…' : '🎤 Speak'}
+          </button>
+        )}
         <button onClick={() => setQuery('I need a shelter in Downtown tonight')} style={{ padding: 16, borderRadius: 12 }}>Shelter</button>
         <button onClick={() => setQuery('I need a free clinic near City Heights')} style={{ padding: 16, borderRadius: 12 }}>Clinic</button>
       </div>
+      {!micSupported && <p style={{ fontSize: 13, color: '#666' }}>Tip: use Chrome or Edge for the Speak button — other browsers hide it and typing still works.</p>}
 
       {answer && (
         <div style={{ marginTop: 24, padding: 20, background: '#f0f7ff', borderRadius: 12 }}>

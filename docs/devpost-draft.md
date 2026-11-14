@@ -34,6 +34,6 @@ Live data + a real database + a voice interface beats a pretty frontend. Judges 
 Next.js, TypeScript, Neon Postgres, Bright Data, Gemini API (Google AI Studio), ElevenLabs, Cursor, Grok Bot
 
 ## Links to include on Devpost
-- GitHub repo link: [PASTE YOUR REPO URL]
+- GitHub repo link: https://github.com/Cici3939/voicebridge-sd
 - Video: [PASTE PUBLIC YOUTUBE / DRIVE LINK]
 - Live demo: [PASTE IF DEPLOYED]
