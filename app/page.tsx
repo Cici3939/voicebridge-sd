@@ -11,14 +11,17 @@ export default function Home() {
   async function ask() {
     setLoading(true);
     setAnswer('');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000);
     try {
       const res = await fetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query }),
+        signal: controller.signal,
       });
       const data = await res.json();
-      setAnswer(data.answer || 'Sorry, I could not find anything. Try calling 211.');
+      setAnswer(data.answer || data.error || 'Sorry, I could not find anything. Try calling 211.');
       setResources(data.resources || []);
       if (data.audioBase64) {
         const blob = new Blob([Uint8Array.from(atob(data.audioBase64), (c) => c.charCodeAt(0))], { type: 'audio/mpeg' });
@@ -26,7 +29,12 @@ export default function Home() {
         setAudioUrl(url);
         new Audio(url).play();
       }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        setAnswer('That took too long — the voice service is slow right now. Please try again.');
+      }
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   }
