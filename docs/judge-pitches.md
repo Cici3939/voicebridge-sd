@@ -25,7 +25,7 @@ Q&A prep: Which voice/model? → eleven_multilingual_v2, stability 0.5. Why voic
 Lead: "Gemini does the understanding and the plain-language summary."
 Show: the parseQuery prompt + the summarize prompt in `lib/voicebridge.ts`.
 Say: "Gemini turns 'I need free food near La Jolla' into {type: food, area: La Jolla} and then turns 3 database rows into one 80-word spoken answer a 6th-grader can follow."
-Q&A prep: Which model? → gemini-2.0-flash via Google AI Studio. Why Gemini? → fast, good at structured parsing + summarization.
+Q&A prep: Which model? → gemini-3.8-flash via Google AI Studio. Why Gemini? → fast, good at structured parsing + summarization.
 
 ## 5. Best Overall / Most Innovative judge
 Lead: "Real problem, working demo, live data."

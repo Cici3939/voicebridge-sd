@@ -11,7 +11,7 @@ export const sql = neon(process.env.DATABASE_URL!);
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function parseQuery(query: string) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
   const prompt = `
 You are VoiceBridge SD. Parse this request into JSON only, no other text.
 Request: "${query}"
@@ -28,7 +28,7 @@ If unclear, type is "food" and area is null.
 }
 
 export async function summarizeResources(query: string, resources: any[]) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
   const prompt = `
 You are a kind helper for someone who needs free help in San Diego.
 User asked: "${query}"
@@ -96,7 +96,7 @@ export type ScrapedResource = {
 // This is what makes the Bright Data track real: live web data → Neon rows
 // with a fresh last_scraped timestamp the judge can see.
 export async function extractListingsFromHtml(html: string, sourceUrl: string, type: 'food' | 'shelter' | 'clinic'): Promise<ScrapedResource[]> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
   const text = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 8000);
   const prompt = `
 Extract real ${type} listings from this scraped page text. Return JSON only, no other text.

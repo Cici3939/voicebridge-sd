@@ -17,7 +17,7 @@ You don't need the 2:00-2:30 Google AI Studio workshop for this.
 
 ## If it fails
 - "API not enabled"? Go to Google Cloud Console → Enable Generative Language API for that project, then retry.
-- Quota error? You're on free tier — gemini-2.0-flash is the cheapest/fastest for this. Don't use Gemini 3 Pro for the demo.
+- Quota error? You're on free tier — gemini-3.8-flash is the cheapest/fastest for this. Don't use Gemini 3 Pro for the demo.
 - Don't commit `.env.local` — it has secrets.
 
 ## What this unlocks
