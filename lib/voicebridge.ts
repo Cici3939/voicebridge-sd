@@ -92,9 +92,11 @@ export async function getResources(type: string, area?: string | null) {
 }
 
 // --- Bright Data: scrape starter ---
-// Use Bright Data Web Scraper API / SERP API.
-// Docs: https://docs.brightdata.com — create a dataset / scraper for 211sandiego.org, feedingsandiego.org, sandiegofoodbank.org
-// This starter shows the shape. Replace the fetch URL with your Bright Data dataset URL / API endpoint.
+// Bright Data Web Unlocker API: POST https://api.brightdata.com/request with
+// the account API key as a Bearer token and a Web Unlocker zone name.
+// The zone must exist on the account (dashboard -> Web Access -> Create API
+// -> Web Unlocker API) and be named exactly BRIGHTDATA_ZONE (voicebridge_sd).
+// A 400 here means the zone doesn't exist; a 401 means a bad API key.
 export async function scrapeWithBrightData(sourceUrl: string) {
   const apiKey = process.env.BRIGHTDATA_API_KEY!;
   // Example: Bright Data SERP / Web Unlocker pattern — adapt to your zone
@@ -141,7 +143,8 @@ Return a JSON array, max 5 items, each: {"name": "...", "address": "...", "area"
 Use null for anything not stated. Only include listings actually named on the page — do not invent any.
 If no listings are named, return [].
 `;
-  const result = await model.generateContent(prompt);
+  const result = await withTimeout(model.generateContent(prompt), 15000).catch(() => null);
+  if (!result) return [];
   try {
     const parsed = JSON.parse(result.response.text().replace(/```json|```/g, '').trim());
     return (Array.isArray(parsed) ? parsed : []).map((r: any) => ({ ...r, type, source_url: sourceUrl }));

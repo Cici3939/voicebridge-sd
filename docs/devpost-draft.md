@@ -1,5 +1,7 @@
 # Devpost Draft — VoiceBridge SD
 
+> STATUS Sat 2:40pm: demo works end to end (ask -> Neon -> spoken answer in ~11 sec). Seeded 12 real listings in Neon. Still pending: Bright Data zone `voicebridge_sd` creation + scrape rerun (Cici, in dashboard), SpaceXSI Cursor Pro + Grok Bot (workshop 2:45pm). Paste repo + video links at the bottom before submitting.
+
 ## Tagline
 Voice-first help finder for San Diego — speak what you need, hear where to go.
 
@@ -17,7 +19,7 @@ Flow: Bright Data scrapes live listings → Neon stores them → Gemini understa
 - **Neon — Best Database-Driven / Agent Backend:** All resources live in Neon Postgres (`resources` table). The API queries Neon by type + area. No JSON file fallback in production — seed data is only a fallback if scraping fails.
 - **ElevenLabs — Best Project Built with ElevenLabs:** Voice is core, not a bolt-on. The Gemini answer is spoken with ElevenLabs TTS (eleven_multilingual_v2). This is designed for low-literacy, elderly, and visually-impaired users. Everyone gets Creator tier credits.
 - **Gemini — Best Use of Gemini API:** Gemini parses intent (food/shelter/clinic, area, language) and summarizes Neon results into simple 6th-grade spoken language under 80 words. Model: gemini-3.8-flash via Google AI Studio.
-- **SpaceXSI — Build Your Hackathon A-Team:** Built in Cursor as our core AI coding agent. Grok Bot automation: Grok Bot watches our repo and auto-summarizes new scraped-data commits and triages issues, so our tiny solo team stays in sync. We used Cursor + Grok Bot throughout the weekend and opted in to the raffle. One X Premium subscription gave access to Cursor, Grok Bot, and Grok API.
+- **SpaceXSI — Build Your Hackathon A-Team:** Built in Cursor as our core AI coding agent. Grok Bot automation: Grok Bot watches our repo and auto-summarizes new scraped-data commits and triages issues, so our tiny solo team stays in sync. We used Cursor + Grok Bot throughout the weekend and opted in to the raffle. One X Premium subscription gave access to Cursor, Grok Bot, and Grok API. *(Update after the 2:45pm workshop: confirm Cursor Pro + Grok Bot are actually set up before submitting this paragraph as fact.)*
 - **Best Overall / Most Innovative:** Same project — most outstanding + most unique real-world solution.
 
 ## Challenges

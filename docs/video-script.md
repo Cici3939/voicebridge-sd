@@ -8,7 +8,7 @@ Total: 3:00. Record in one take if you can, quiet room, show your face for 10 se
 ## 0:30-1:30 — Live Demo (screen share, SPEAK OUT LOUD)
 Show the homepage.
 Say into the mic: "I need free food near La Jolla today."
-Let it answer out loud. Show the cards underneath with name, address, hours.
+Wait ~11 seconds — let it answer out loud, don't click anything. Show the cards underneath with name, address, hours.
 Then try a second one: "I need a shelter in Downtown tonight."
 Point to the `last_scraped` time on screen — "This is live data from today, not fake data."
 
