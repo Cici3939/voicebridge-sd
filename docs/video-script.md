@@ -10,7 +10,7 @@ Show the homepage.
 Say into the mic: "I need free food near La Jolla today."
 Wait ~11 seconds — let it answer out loud, don't click anything. Show the cards underneath with name, address, hours.
 Then try a second one: "I need a shelter in Downtown tonight."
-Point to the `last_scraped` time on screen — "This is live data from today, not fake data."
+Point to the `last_scraped` time on screen — ONLY say "This is live data from today" if the scrape has actually succeeded; otherwise say "These are real listings from San Diego orgs, stored in our database."
 
 ## 1:30-2:30 — How it works (screen share code / diagram)
 "Bright Data scrapes live listings from 211 San Diego and Feeding San Diego. That goes into Neon Postgres. Gemini figures out what you need and writes a simple summary. ElevenLabs speaks it out loud. We built it in Cursor with Grok Bot helping."

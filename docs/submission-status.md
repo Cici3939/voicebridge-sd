@@ -9,8 +9,7 @@ are not true yet (see below).
   out loud via ElevenLabs. Neon has the 12 seeded resources.
 - `docs/devpost-draft.md` and `docs/video-script.md` already exist, plus
   `docs/judge-pitches.md`. Start from those — do not rewrite from scratch.
-- GitHub: https://github.com/Cici3939/voicebridge-sd — latest verified
-  commit is the 5-second Gemini-timeout fix.
+- GitHub: https://github.com/Cici3939/voicebridge-sd — latest commit b385d24 (README polish); fallback-audio + mic button landed in aeffa94 / afb49f3.
 
 ## Gemini — yes, planned and in the code, but not live in the demo
 - `lib/voicebridge.ts`: `parseQuery` + `summarizeResources` call
@@ -50,7 +49,7 @@ are not true yet (see below).
   video script line "This is live data from today, not fake data."
 
 ## Devpost draft — placeholders still open
-- Repo link: https://github.com/Cici3939/voicebridge-sd (fill it in)
+- Repo link: filled in (https://github.com/Cici3939/voicebridge-sd)
 - Video link: missing — record Sun 10:00–11:00 AM, upload Public
 - Live demo link: missing / optional
 - Impact prizes: $1,000 / $750 / $500 are Bright Data API credits,
