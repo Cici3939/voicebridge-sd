@@ -10,26 +10,57 @@ export const sql = neon(process.env.DATABASE_URL!);
 // --- Gemini: parse intent + summarize ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
+// Race a promise against a timeout so a slow/hung Gemini call can never
+// freeze the demo — the caller falls back to plain code instead.
+async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ]);
+}
+
+// No-Gemini fallback: match type and area by keywords. Covers the demo
+// queries ("food near La Jolla", "shelter in Downtown", "clinic near City Heights").
+function fallbackParse(query: string) {
+  const q = query.toLowerCase();
+  const type = q.includes('shelter') ? 'shelter'
+    : q.includes('clinic') || q.includes('doctor') || q.includes('health') ? 'clinic'
+    : 'food';
+  const areas = ['La Jolla', 'Downtown', 'North County', 'South San Diego', 'City Heights', 'Logan Heights', 'San Ysidro', 'San Diego'];
+  const area = areas.find((a) => q.includes(a.toLowerCase())) ?? null;
+  return { type, area, language: 'en' };
+}
+
 export async function parseQuery(query: string) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
-  const prompt = `
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+    const prompt = `
 You are VoiceBridge SD. Parse this request into JSON only, no other text.
 Request: "${query}"
 Return: {"type": "food" | "shelter" | "clinic", "area": "La Jolla" | "Downtown" | "San Diego" | "North County" | "South San Diego" | "City Heights" | "Logan Heights" | "San Ysidro" | null, "language": "en" | "es"}
 Areas must come from that list. "near La Jolla" → area "La Jolla". "near City Heights" → area "City Heights".
 If unclear, type is "food" and area is null.
 `;
-  const result = await model.generateContent(prompt);
-  try {
+    const result = await withTimeout(model.generateContent(prompt), 12000);
     return JSON.parse(result.response.text().replace(/```json|```/g, '').trim());
-  } catch {
-    return { type: 'food', area: null, language: 'en' };
+  } catch (e) {
+    console.error('parseQuery fell back to keywords:', (e as Error)?.message);
+    return fallbackParse(query);
   }
 }
 
+// No-Gemini fallback: plain template summary from the rows.
+function templateSummary(resources: any[]) {
+  if (!resources.length) return 'Sorry, I could not find anything. Try calling 211.';
+  const top = resources.slice(0, 3);
+  return `Here ${top.length === 1 ? 'is' : 'are'} ${top.length} option${top.length === 1 ? '' : 's'}: ` +
+    top.map((r: any) => `${r.name}, ${r.address || 'address not listed'}. Hours: ${r.hours || 'not listed'}. Phone: ${r.phone || 'not listed'}.`).join(' ');
+}
+
 export async function summarizeResources(query: string, resources: any[]) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
-  const prompt = `
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+    const prompt = `
 You are a kind helper for someone who needs free help in San Diego.
 User asked: "${query}"
 Resources found:
@@ -40,8 +71,12 @@ Start with the closest/best option. Give name, address, and hours.
 Keep it under 80 words. No bullet points, just sentences to be read out loud.
 If no resources, say so kindly and suggest calling 211.
 `;
-  const result = await model.generateContent(prompt);
-  return result.response.text().trim();
+    const result = await withTimeout(model.generateContent(prompt), 12000);
+    return result.response.text().trim();
+  } catch (e) {
+    console.error('summarizeResources fell back to template:', (e as Error)?.message);
+    return templateSummary(resources);
+  }
 }
 
 // --- Neon: query resources ---
