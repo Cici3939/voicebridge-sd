@@ -65,6 +65,9 @@ export default function Home() {
     } catch (err: any) {
       if (err?.name === 'AbortError') {
         setAnswer('That took too long — the voice service is slow right now. Please try again.');
+      } else {
+        // Don't fail silently: show what happened so it's diagnosable.
+        setAnswer(`Couldn't reach the server (${err?.message || 'fetch failed'}). Is the dev server still running? Restart it with npm run dev and try again.`);
       }
     } finally {
       clearTimeout(timeout);
