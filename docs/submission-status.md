@@ -65,6 +65,11 @@ successful live Gemini call.
   with 503 "high demand" (the model is busy, temporary). Retry the test
   in ~10 min; each try uses 1 of the new 20, so don't spam it. Hold the
   scrape rerun until the test prints OK.
+- ~8:35 PM: test with the new key TIMED OUT after 15,007 ms — no 429,
+  no 503; the request went out but Google never answered within 15 s
+  (same hang as the /api/ask calls earlier today). Plan: retry once in
+  15–20 min; if it times out again, stop for tonight and try Sunday
+  morning (fresh quota on both keys, model likely less busy).
 - Sunday quota budget: 20 fresh requests. Each Ask = 2 (parse +
   summary). Test once, scrape once, save the rest for the video +
   judging demos — do not burn requests on casual re-tests. Option:
