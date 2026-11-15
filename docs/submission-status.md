@@ -70,6 +70,14 @@ successful live Gemini call.
   (same hang as the /api/ask calls earlier today). Plan: retry once in
   15–20 min; if it times out again, stop for tonight and try Sunday
   morning (fresh quota on both keys, model likely less busy).
+- ~9:58 PM: test failed a THIRD time with the new key (high demand /
+  503 again). DECISION: stop retrying tonight — each try burns 1 of the
+  new key's 20 and can't force a busy model. Sunday morning: test once
+  when it's quieter and both keys are fresh; if OK, scrape immediately,
+  then budget the rest for video + judging. If still 503 Sunday, option
+  is switching the model to gemini-2.5-flash (small change — the track
+  just needs the Gemini API, not this exact model) or pitching honestly
+  with the fallback. The demo works on the fallback either way.
 - Sunday quota budget: 20 fresh requests. Each Ask = 2 (parse +
   summary). Test once, scrape once, save the rest for the video +
   judging demos — do not burn requests on casual re-tests. Option:
