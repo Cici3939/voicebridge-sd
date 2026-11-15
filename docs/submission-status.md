@@ -78,6 +78,12 @@ successful live Gemini call.
   is switching the model to gemini-2.5-flash (small change — the track
   just needs the Gemini API, not this exact model) or pitching honestly
   with the fallback. The demo works on the fallback either way.
+- ~10:00 PM: SWITCHED the model to gemini-2.5-flash (lib/voicebridge.ts
+  3 call sites + scripts/test-gemini.ts + docs) after three 3.8-flash
+  failures. The 503 was specific to gemini-3.8-flash's load, so 2.5-flash
+  gets its own load + quota. Build re-verified clean. If the test still
+  fails, the fallback carries the demo exactly as before — the switch
+  cannot break anything, since Gemini calls already fall back on failure.
 - Sunday quota budget: 20 fresh requests. Each Ask = 2 (parse +
   summary). Test once, scrape once, save the rest for the video +
   judging demos — do not burn requests on casual re-tests. Option:

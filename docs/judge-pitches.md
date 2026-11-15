@@ -28,7 +28,7 @@ Q&A prep: Which voice/model? → eleven_multilingual_v2, stability 0.5. Why voic
 Lead: "Gemini does the understanding and the plain-language summary."
 Show: the parseQuery prompt + the summarize prompt in `lib/voicebridge.ts`.
 Say: "Gemini turns 'I need free food near La Jolla' into {type: food, area: La Jolla} and then turns 3 database rows into one 80-word spoken answer a 6th-grader can follow."
-Q&A prep: Which model? → gemini-3.8-flash via Google AI Studio. Why Gemini? → fast, good at structured parsing + summarization.
+Q&A prep: Which model? → gemini-2.5-flash via Google AI Studio. Why Gemini? → fast, good at structured parsing + summarization.
 Honesty note: live Gemini calls have failed so far — the ~7:57pm test got a 429 "quota exceeded" (free tier is 20 requests/day, used up by testing + scrapes; resets ~midnight), and before that a 503 "high demand" plus timeouts, so the keyword/template fallback carried the demo. A second key in a new project is being made tonight for a fresh 20. Only claim Gemini produced a specific answer after a live call is observed returning OK (retry `npx tsx scripts/test-gemini.ts` in Cursor). Sunday budget: each Ask = 2 requests, so save them for the video + judging demos.
 
 ## 5. Best Overall / Most Innovative judge
