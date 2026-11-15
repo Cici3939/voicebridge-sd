@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import VoiceTide from './VoiceTide';
 
 type Resource = {
   id: string | number;
@@ -249,8 +250,18 @@ export default function Home() {
     }
   }
 
+  const artMode = listening ? 'listening' : loading ? 'loading' : audioPlaying ? 'speaking' : 'idle';
+
+  function fillExample(kind: 'food' | 'shelter' | 'clinic') {
+    if (kind === 'food') setQuery('I need free food near La Jolla today');
+    else if (kind === 'shelter') setQuery('I need a shelter in Downtown tonight');
+    else setQuery('I need a free clinic near City Heights');
+    setMicStatus('Filled an example from the tide — tap “Answer out loud” for the spoken reply.');
+  }
+
   return (
-    <main className="vb">
+    <main className={`vb mode-${artMode}`}>
+      <div className="vb-aurora" aria-hidden />
       <header className="vb-mission" aria-labelledby="vb-brand">
         <p className="vb-eyebrow">San Diego · free help · voice-first</p>
         <h1 id="vb-brand" className="vb-brand">VoiceBridge SD</h1>
@@ -263,6 +274,8 @@ export default function Home() {
           <li><span className="dot clinic" aria-hidden /> Clinic</li>
         </ul>
       </header>
+
+      <VoiceTide mode={artMode} onFill={fillExample} />
 
       <section className="vb-ask" aria-label="Ask for help">
         <label className="vb-label" htmlFor="need-input">What do you need?</label>
@@ -390,14 +403,18 @@ export default function Home() {
         <section className="vb-results" aria-label="Matching resources">
           <h2 className="vb-results-title">{resources.length} place{resources.length === 1 ? '' : 's'} nearby</h2>
           <ul className="vb-cards">
-            {resources.map((r) => {
+            {resources.map((r, i) => {
               const meta = typeMeta(r.type);
               const tel = r.phone ? r.phone.replace(/[^0-9+]/g, '') : '';
               return (
                 <li
                   key={r.id}
                   className="vb-card"
-                  style={{ borderColor: meta.accent, background: meta.soft }}
+                  style={{
+                    borderColor: meta.accent,
+                    background: meta.soft,
+                    animationDelay: `${i * 0.08}s`,
+                  }}
                 >
                   <div className="vb-card-top">
                     <span className="vb-type-badge" style={{ background: meta.accent }}>
@@ -478,12 +495,69 @@ export default function Home() {
           min-height: 100vh;
           box-sizing: border-box;
           animation: vbFade 0.5s ease;
+          position: relative;
+          overflow-x: clip;
         }
         .vb *, .vb *::before, .vb *::after { box-sizing: border-box; }
+        .vb-aurora {
+          pointer-events: none;
+          position: absolute;
+          inset: -10% -20% auto;
+          height: 420px;
+          background:
+            radial-gradient(closest-side, rgba(126, 184, 201, 0.35), transparent 70%),
+            radial-gradient(closest-side, rgba(45, 106, 79, 0.18), transparent 70%);
+          background-size: 55% 70%, 40% 55%;
+          background-position: 10% 40%, 90% 20%;
+          background-repeat: no-repeat;
+          filter: blur(8px);
+          animation: vbAurora 14s ease-in-out infinite alternate;
+          z-index: 0;
+        }
+        .vb.mode-listening .vb-aurora {
+          background:
+            radial-gradient(closest-side, rgba(180, 35, 24, 0.22), transparent 70%),
+            radial-gradient(closest-side, rgba(126, 184, 201, 0.28), transparent 70%);
+        }
+        .vb.mode-speaking .vb-aurora {
+          background:
+            radial-gradient(closest-side, rgba(14, 77, 104, 0.28), transparent 70%),
+            radial-gradient(closest-side, rgba(45, 106, 79, 0.2), transparent 70%);
+        }
+        .vb.mode-loading .vb-aurora {
+          animation-duration: 4s;
+        }
+        .vb > *:not(.vb-aurora) { position: relative; z-index: 1; }
+
+        .vb-tide {
+          margin: 0 0 22px;
+          height: clamp(200px, 32vw, 260px);
+          border-radius: 22px;
+          overflow: hidden;
+          border: 1px solid color-mix(in srgb, var(--shelter) 22%, white);
+          box-shadow:
+            0 18px 40px rgba(14, 77, 104, 0.1),
+            inset 0 1px 0 rgba(255,255,255,0.7);
+          background: linear-gradient(180deg, #e7f4f8 0%, #f7fbfc 55%, #e8f3f0 100%);
+          animation: vbRise 0.7s ease;
+          touch-action: none;
+        }
+        .vb-tide-canvas {
+          display: block;
+          width: 100%;
+          height: 100%;
+          cursor: crosshair;
+        }
+        .vb-tide-canvas.is-listening {
+          animation: vbTideGlow 1.4s ease-in-out infinite;
+        }
+        .vb-tide-canvas.is-speaking {
+          animation: vbTideSpeak 2s ease-in-out infinite;
+        }
 
         .vb-mission {
-          margin-bottom: 28px;
-          padding-bottom: 22px;
+          margin-bottom: 18px;
+          padding-bottom: 18px;
           border-bottom: 1px solid var(--line);
           animation: vbRise 0.55s ease;
         }
@@ -501,7 +575,12 @@ export default function Home() {
           font-size: clamp(2.6rem, 7vw, 3.6rem);
           line-height: 1.05;
           letter-spacing: -0.02em;
-          color: var(--ocean);
+          background: linear-gradient(120deg, var(--ocean) 0%, #1a5f7a 45%, #2d6a4f 100%);
+          background-size: 200% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          animation: vbBrandShimmer 8s ease-in-out infinite;
         }
         .vb-mission-line {
           margin: 0 0 16px;
@@ -617,12 +696,17 @@ export default function Home() {
         .vb-btn-icon { font-size: 1.2rem; line-height: 1; }
         .vb-btn-primary {
           flex: 1 1 220px;
-          background: var(--ocean);
+          background: linear-gradient(135deg, var(--ocean) 0%, #1a5f7a 55%, #164e63 100%);
+          background-size: 160% 160%;
           color: #fff;
           box-shadow: 0 8px 20px rgba(14, 77, 104, 0.25);
+          animation: vbBtnDrift 6s ease-in-out infinite;
         }
         .vb-btn-primary:hover:not(:disabled) {
-          background: #0a3d53;
+          filter: brightness(1.06);
+        }
+        .vb.mode-loading .vb-btn-primary {
+          animation: vbBtnPulse 1s ease-in-out infinite;
         }
         .vb-btn-mic {
           flex: 0 0 auto;
@@ -749,6 +833,12 @@ export default function Home() {
           border: 2px solid;
           border-left-width: 6px;
           box-shadow: 0 8px 22px rgba(20, 35, 43, 0.05);
+          animation: vbCardIn 0.55s ease both;
+          transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .vb-card:hover {
+          transform: translateY(-4px) rotate(-0.2deg);
+          box-shadow: 0 16px 32px rgba(20, 35, 43, 0.1);
         }
         .vb-card-top {
           display: flex;
@@ -841,12 +931,50 @@ export default function Home() {
           0%, 100% { box-shadow: 0 0 0 0 rgba(180, 35, 24, 0.45); }
           50% { box-shadow: 0 0 0 10px rgba(180, 35, 24, 0); }
         }
+        @keyframes vbAurora {
+          from { transform: translate3d(-2%, 0, 0) scale(1); opacity: 0.85; }
+          to { transform: translate3d(3%, 4%, 0) scale(1.06); opacity: 1; }
+        }
+        @keyframes vbBrandShimmer {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes vbBtnDrift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes vbBtnPulse {
+          0%, 100% { transform: translateY(0); box-shadow: 0 8px 20px rgba(14, 77, 104, 0.25); }
+          50% { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(14, 77, 104, 0.4); }
+        }
+        @keyframes vbCardIn {
+          from { opacity: 0; transform: translateY(16px) scale(0.98); }
+          to { opacity: 1; transform: none; }
+        }
+        @keyframes vbTideGlow {
+          0%, 100% { box-shadow: inset 0 0 0 0 rgba(180, 35, 24, 0.15); }
+          50% { box-shadow: inset 0 0 0 3px rgba(180, 35, 24, 0.28); }
+        }
+        @keyframes vbTideSpeak {
+          0%, 100% { filter: saturate(1); }
+          50% { filter: saturate(1.15); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .vb, .vb-mission, .vb-ask, .vb-answer, .vb-results, .vb-tide,
+          .vb-aurora, .vb-brand, .vb-btn-primary, .vb-card,
+          .vb-tide-canvas.is-listening, .vb-tide-canvas.is-speaking {
+            animation: none !important;
+          }
+          .vb-card:hover { transform: none; }
+        }
 
         @media (max-width: 560px) {
           .vb { padding: 20px 16px 40px; }
           .vb-btn { width: 100%; }
           .vb-btn-mic { width: 100%; }
           .vb-card-top { flex-direction: column; align-items: flex-start; }
+          .vb-tide { height: 210px; }
         }
       `}</style>
     </main>
