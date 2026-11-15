@@ -79,6 +79,40 @@ function phoneToSpanishWords(phone: string | null | undefined): string | null {
     .join(', ');
 }
 
+// Translate the English hours/address phrases from our listings into
+// Spanish for the spoken answer. Street addresses (proper nouns) stay
+// as-is — only the descriptive phrases get translated, so "Horario:
+// Check website for distributions" stops breaking the Spanish flow.
+const ES_PHRASES: [RegExp, string][] = [
+  [/^check website for distribution hours$/i, 'Consulta el sitio web para los horarios de distribución'],
+  [/^check website for distributions$/i, 'Consulta el sitio web para las distribuciones'],
+  [/^check website for intake hours$/i, 'Consulta el sitio web para los horarios de admisión'],
+  [/^check website for intake$/i, 'Consulta el sitio web para la admisión'],
+  [/^check website$/i, 'Consulta el sitio web'],
+  [/^mon-fri, check website$/i, 'Lunes a viernes, consulta el sitio web'],
+  [/^evenings\/weekends, check website$/i, 'Noches y fines de semana, consulta el sitio web'],
+  [/^24\/7 by phone$/i, '24/7 por teléfono'],
+  [/^phone and online only$/i, 'Solo por teléfono y en línea'],
+  [/^multiple sites in san diego$/i, 'Varias ubicaciones en San Diego'],
+  [/^north county distributions, check website$/i, 'Distribuciones en North County, consulta el sitio web'],
+  // Fallbacks for phrases not listed above:
+  [/check website/gi, 'consulta el sitio web'],
+  [/mon-fri/gi, 'lunes a viernes'],
+  [/evenings\/weekends/gi, 'noches y fines de semana'],
+  [/24\/7 by phone/gi, '24/7 por teléfono'],
+  [/distributions/gi, 'distribuciones'],
+  [/distribution hours/gi, 'horarios de distribución'],
+  [/intake hours/gi, 'horarios de admisión'],
+  [/\bintake\b/gi, 'admisión'],
+];
+
+function translateEs(text: string | null | undefined): string | null {
+  if (!text) return null;
+  let out = text;
+  for (const [re, rep] of ES_PHRASES) out = out.replace(re, rep);
+  return out;
+}
+
 // No-Gemini fallback: plain template summary from the rows.
 function templateSummary(resources: any[], language: string = 'en') {
   if (!resources.length) {
@@ -91,7 +125,9 @@ function templateSummary(resources: any[], language: string = 'en') {
     return `Estas son ${top.length} opciones: ` +
       top.map((r: any) => {
         const phoneWords = phoneToSpanishWords(r.phone);
-        return `${r.name}, ${r.address || 'dirección no disponible'}. Horario: ${r.hours || 'no disponible'}. Teléfono: ${phoneWords || 'no disponible'}.`;
+        const addressEs = translateEs(r.address) || 'dirección no disponible';
+        const hoursEs = translateEs(r.hours) || 'no disponible';
+        return `${r.name}, ${addressEs}. Horario: ${hoursEs}. Teléfono: ${phoneWords || 'no disponible'}.`;
       }).join(' ');
   }
   return `Here ${top.length === 1 ? 'is' : 'are'} ${top.length} option${top.length === 1 ? '' : 's'}: ` +
