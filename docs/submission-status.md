@@ -1,30 +1,48 @@
-# Submission status — Sat Nov 14, 5:15 PM (America/Los_Angeles)
+# Submission status — Sat Nov 14, 7:10 PM (America/Los_Angeles)
 
 Checked this run against the live repo copy in this workspace and the
-main-chat record. The SpaceXSI paragraph in the Devpost draft is now
-TRUE (confirmed below). Two claims are still not true yet: live Bright
-Data scrape, and a successful live Gemini call.
+main-chat record. The SpaceXSI paragraph in the Devpost draft is TRUE.
+Two claims are still not true yet: live Bright Data scrape, and a
+successful live Gemini call.
 
 ## What works right now
 - End-to-end demo confirmed ~2:11 PM: Ask takes ~11 sec, answer speaks
   out loud via ElevenLabs. Neon has the 12 seeded resources.
 - Since then: Spanish answers end to end, area chips (La Jolla /
-  Downtown / City Heights), live-data footer (resource count + newest
-  last_scraped), tel: + website links on cards, fade-up + pulsing-mic
-  animations — pushed as commit 2c56d95. Voice sprint is therefore
-  mostly done early; tonight is build check + the gates only Cici can
-  clear (below).
-- Build re-verified 5:15 PM on the workspace copy at HEAD 704fc51:
-  with a dummy DATABASE_URL it compiles clean, routes /, /api/ask,
-  /api/resources present. (Without any DATABASE_URL the build fails at
-  page-data collection for /api/ask — expected in this copy, which has
-  no .env.local; her laptop has the real one, so it builds there.)
-- `docs/devpost-draft.md` and `docs/video-script.md` already exist, plus
-  `docs/judge-pitches.md` and `docs/pitch-30sec.md`. Start from those —
-  do not rewrite from scratch.
+  Downtown / City Heights), live-data footer, tel: + website links on
+  cards, fade-up + pulsing-mic animations (commit 2c56d95).
+- UI polish done in Cursor and merged: mission header, bigger type,
+  clearer cards (branch cursor/polish-ui-mission-header, merged as
+  374a83f). Cursor also made the Neon + Gemini clients lazy, so
+  `next build` now passes with NO DATABASE_URL at all — verified clean
+  on the merged tree, routes /, /api/ask, /api/resources present.
+- Mic fix done in Cursor, awaiting merge: branch
+  cursor/fix-mic-single-audio (2064d48, app/page.tsx only). Tears down
+  the old recognizer before starting, keeps the full transcript across
+  pauses, clears handlers so a stuck session can't block Speak; Ask
+  stops the mic first, then fetches; autoplay and the on-page player
+  are now the same <audio> element so replay won't stack a second
+  voice; chips only fill the box, pills/tags aren't clickable.
+- Voice sprint is therefore mostly done early; tonight is build check +
+  the gates only Cici can clear (below).
 - GitHub: https://github.com/Cici3939/voicebridge-sd — latest commit
-  704fc51 (Devpost draft: SpaceXSI paragraph rewritten to match reality,
-  Gemini note updated with the 503 test result).
+  bcccdfc (spacexsi-setup.md corrected). The mic-fix merge will move
+  it forward once Cici merges + pushes.
+- `docs/devpost-draft.md`, `docs/video-script.md`,
+  `docs/judge-pitches.md`, `docs/pitch-30sec.md`, README.md and
+  `docs/spacexsi-setup.md` are all refreshed to the ~5:20–5:25pm
+  state. Start from those — do not rewrite from scratch.
+
+## The "9 vs 12" question — solved, not a bug in the data
+- The database has 12 resources (4 food, 4 shelter, 4 clinic — see
+  data/seed.json). The footer showed 9 because `getResources` has a
+  `LIMIT 3` per type, and the footer adds 3+3+3. The 4th row of each
+  type is in Neon, just never shown.
+- Verify in the Neon SQL Editor:
+  `SELECT type, COUNT(*) FROM resources GROUP BY type;` — expect 4, 4, 4.
+- Cursor was given a task to make the footer show the true total
+  (a real count, not the LIMIT 3 rows). The demo itself only ever
+  shows 3 per type, which is by design so the answer stays short.
 
 ## Gemini — yes, planned and in the code, but not live in the demo
 - `lib/voicebridge.ts`: `parseQuery` + `summarizeResources` call
@@ -46,16 +64,13 @@ Data scrape, and a successful live Gemini call.
   Grok Bot automation, describe both in Devpost, opt in to the raffle
   (mechanical keyboard).
 - Promo redeemed ~4:56 PM (free month of X Premium). Cursor Pro is
-  running and has done real work: it ran the Gemini test script in
-  Cursor's terminal. UI polish was assigned to Cursor's agent next
-  (bigger type, clearer cards, mission header) — confirm what it changed
-  when it reports back, then commit + push from Cursor.
+  running and has done real work: ran the Gemini test script, did the
+  UI polish (merged 374a83f) and the mic fix (2064d48, awaiting merge).
 - Grok Bot CONFIRMED working ~5:10 PM: it triaged issue #1 (Bright
   Data scrape 400) — created the `data` label, posted a fix plan as an
-  issue comment (Cici said yes to posting). Its plan matched Muse's
-  diagnosis exactly, and it suggested one hardening step: include
-  `await res.text()` in the thrown error so Bright Data's own reason
-  shows in the logs. Good next Cursor task.
+  issue comment (verified live on GitHub, comment 6887126309). Its plan
+  matched Muse's diagnosis exactly. Cici also set it to check the repo
+  on a schedule from Sat evening until Sun 1:00 PM.
 - `docs/devpost-draft.md` SpaceXSI paragraph was rewritten in commit
   704fc51 to match this reality. Remaining SpaceXSI bit: tick the
   raffle box on Devpost at submission time.
@@ -68,8 +83,9 @@ Data scrape, and a successful live Gemini call.
   reached the same conclusion.
 - Fix, on her laptop/dashboard only: brightdata.com/cp/zones →
   create a Web Unlocker zone named exactly `voicebridge_sd`, then
-  `npm run scrape`. Until that rerun succeeds, the demo runs on the
-  12 seeded Neon rows — so the video must not claim "live scraped
+  `npm run scrape`. A successful scrape adds up to 5 fresh listings
+  per source (3 sources). Until that rerun succeeds, the demo runs on
+  the 12 seeded Neon rows — so the video must not claim "live scraped
   today" unless a scrape actually succeeds.
 - `docs/devpost-draft.md` says "This is not mock data — it's live web
   data" — true only after a successful scrape. Same caveat for the
@@ -87,19 +103,20 @@ Data scrape, and a successful live Gemini call.
 - Final Devpost: 12:00 PM, no changes after; no commits after 12:00 PM
 - Judging: 12:30–2:30 PM, Qualcomm Room, 3 min + 2 min Q&A per judge
 
-## Tonight — Sat 5:00–10:00 PM run order (do the gates first)
-1. Create the Bright Data zone `voicebridge_sd`, then `npm run scrape`.
+## Tonight — Sat 7:10–10:00 PM run order (do the gates first)
+1. Merge the mic-fix branch (commands already given), push, then
+   `git pull origin main` in the INNER folder, restart dev (port 3001).
+2. Create the Bright Data zone `voicebridge_sd`, then `npm run scrape`.
    ~10 min. If the scrape still 400s, stop chasing it — seeded data
    carries the demo; show scraper logs to the Bright Data judge instead.
-2. In Cursor: UI polish (prompt already given) + retry the Gemini test
-   later (503 may clear). Commit + push from Cursor.
-3. `git pull origin main`, restart dev (inner folder, port 3001), test
-   3x — food + shelter + clinic — plus mic in Chrome and one Spanish
-   question ("Necesito comida gratis cerca de La Jolla").
+3. Test 3x — food + shelter + clinic — plus mic in Chrome (transcript
+   survives pauses, replay plays one voice) and one Spanish question
+   ("Necesito comida gratis cerca de La Jolla"). Retry the Gemini test.
 4. 7:30–8:30 PM dinner (free) — practice the 30-sec pitch out loud
    (`docs/pitch-30sec.md`).
 5. 8:30–10:00 PM voice sprint is mostly done already (TTS + mic +
-   fallback audio); use the slot for bug fixes only, then commit +
-   push before the 10:00 PM space close. No new features after 10 PM.
+   fallback audio + single-audio fix); use the slot for bug fixes only,
+   then commit + push before the 10:00 PM space close. No new features
+   after 10 PM.
 6. Sun: video 10:00–11:00 AM, initial Devpost by 11:00 AM, final by
    12:00 PM, judging 12:30–2:30 PM. No commits after Sun 12:00 PM.
