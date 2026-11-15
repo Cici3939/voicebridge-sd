@@ -14,12 +14,13 @@ Point to the `last_scraped` time on screen — ONLY say "This is live data from 
 
 ## 1:30-2:30 — How it works (screen share code / diagram)
 "Bright Data scrapes live listings from 211 San Diego and Feeding San Diego. That goes into Neon Postgres. Gemini figures out what you need and writes a simple summary. ElevenLabs speaks it out loud. We built it in Cursor with Grok Bot helping."
-> ONLY say the Bright Data + Cursor/Grok Bot lines as written if they are true by recording time. If the scrape hasn't succeeded yet, say instead: "Bright Data is our scraper — right now the demo runs on real listings we loaded into Neon, and the scraper refreshes them once the zone is set up." If Grok Bot isn't confirmed yet, say "We built it in Cursor" and leave Grok Bot out.
+> ONLY say the Bright Data line as written if the scrape has actually succeeded by recording time. If it hasn't, say instead: "Bright Data is our scraper — right now the demo runs on real listings we loaded into Neon, and the scraper refreshes them once the zone is set up." The Cursor + Grok Bot line is confirmed true (Cursor ran the Gemini test; Grok Bot triaged issue #1 and posted the fix plan).
 Show: Bright Data log → Neon table → Gemini prompt → ElevenLabs audio playing.
 > Spanish bonus (optional, only if the Spanish answer works when you test it): ask "Necesito comida gratis cerca de La Jolla" and let it answer in Spanish — same pipeline, no extra setup.
 
 ## 2:30-3:00 — Impact + Next
 "Who this helps: low-literacy, elderly, and visually-impaired people in San Diego, and anyone in a crisis who just needs a clear answer fast. It already answers in Spanish too. Next we'd add SMS and more cities. Thank you — VoiceBridge SD."
+> The Spanish line is only true if the Spanish test passes tonight — cut it otherwise.
 
 ## Tips
 - Record the demo twice, use the best take.

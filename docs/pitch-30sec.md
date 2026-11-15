@@ -12,6 +12,11 @@ you need — 'I need free food near La Jolla today' — and it answers out loud,
 in plain language, with the name, address, and hours. It works in Spanish too.
 Want to try it yourself?"
 
+> Keep the Spanish line only if the Spanish test passes tonight. In the
+> how-it-works answer, say "Bright Data scrapes live listings" only if
+> the scrape has succeeded; otherwise say "Bright Data is our scraper —
+> the demo runs on real listings loaded into Neon."
+
 ## If they ask "how does it work?" (15 more seconds)
 
 "Bright Data scrapes live listings, Neon stores them, Gemini understands your
