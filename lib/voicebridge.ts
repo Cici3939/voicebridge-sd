@@ -32,14 +32,17 @@ async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 
 // No-Gemini fallback: match type and area by keywords. Covers the demo
 // queries ("food near La Jolla", "shelter in Downtown", "clinic near City Heights").
+// Also detects Spanish ("Necesito comida gratis cerca de La Jolla") so the
+// Spanish template summary + Spanish TTS still work when Gemini is down.
 function fallbackParse(query: string) {
   const q = query.toLowerCase();
-  const type = q.includes('shelter') ? 'shelter'
-    : q.includes('clinic') || q.includes('doctor') || q.includes('health') ? 'clinic'
+  const isSpanish = /necesito|comida|refugio|cl[ií]nica|salud|gratis|cerca|donde|busco|quiero|ayuda/.test(q);
+  const type = q.includes('shelter') || q.includes('refugio') ? 'shelter'
+    : q.includes('clinic') || q.includes('clínica') || q.includes('clinica') || q.includes('doctor') || q.includes('health') || q.includes('salud') ? 'clinic'
     : 'food';
   const areas = ['La Jolla', 'Downtown', 'North County', 'South San Diego', 'City Heights', 'Logan Heights', 'San Ysidro', 'San Diego'];
   const area = areas.find((a) => q.includes(a.toLowerCase())) ?? null;
-  return { type, area, language: 'en' };
+  return { type, area, language: isSpanish ? 'es' : 'en' };
 }
 
 export async function parseQuery(query: string) {
