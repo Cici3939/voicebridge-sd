@@ -10,6 +10,7 @@ Show the homepage.
 Say into the mic: "I need free food near La Jolla today."
 Wait ~11 seconds — let it answer out loud, don't click anything. Show the cards underneath with name, address, hours.
 Then try a second one: "I need a shelter in Downtown tonight."
+Show the VoiceTide art too — the waves react while you speak, and tapping a Food / Shelter / Clinic buoy fills in that example for you. Same ask, one tap — show it once, it reads as the most visual 10 seconds of the demo.
 Point to the `last_scraped` time on screen — ONLY say "This is live data from today" if the scrape has actually succeeded; otherwise say "These are real listings from San Diego orgs, stored in our database."
 
 ## 1:30-2:30 — How it works (screen share code / diagram)
