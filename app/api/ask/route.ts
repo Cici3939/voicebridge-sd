@@ -14,9 +14,9 @@ export async function POST(req: Request) {
     console.log('[ask] neon start');
     const resources = await getResources(parsed.type, parsed.area);
     console.log('[ask] neon done, rows:', resources.length);
-    // 3. Gemini summarizes to plain spoken language
+    // 3. Gemini summarizes to plain spoken language (in the user's language)
     console.log('[ask] summarize start');
-    const answer = await summarizeResources(query, resources as any[]);
+    const answer = await summarizeResources(query, resources as any[], parsed.language || 'en');
     console.log('[ask] summarize done');
     // 4. ElevenLabs speaks it — return audio as base64 so the frontend can play it instantly
     // If ElevenLabs fails, still return text answer so the demo never dies

@@ -50,14 +50,22 @@ If unclear, type is "food" and area is null.
 }
 
 // No-Gemini fallback: plain template summary from the rows.
-function templateSummary(resources: any[]) {
-  if (!resources.length) return 'Sorry, I could not find anything. Try calling 211.';
+function templateSummary(resources: any[], language: string = 'en') {
+  if (!resources.length) {
+    return language === 'es'
+      ? 'Lo siento, no encontré nada. Llama al 211 para ayuda gratis.'
+      : 'Sorry, I could not find anything. Try calling 211.';
+  }
   const top = resources.slice(0, 3);
+  if (language === 'es') {
+    return `Estas son ${top.length} opciones: ` +
+      top.map((r: any) => `${r.name}, ${r.address || 'dirección no disponible'}. Horario: ${r.hours || 'no disponible'}. Teléfono: ${r.phone || 'no disponible'}.`).join(' ');
+  }
   return `Here ${top.length === 1 ? 'is' : 'are'} ${top.length} option${top.length === 1 ? '' : 's'}: ` +
     top.map((r: any) => `${r.name}, ${r.address || 'address not listed'}. Hours: ${r.hours || 'not listed'}. Phone: ${r.phone || 'not listed'}.`).join(' ');
 }
 
-export async function summarizeResources(query: string, resources: any[]) {
+export async function summarizeResources(query: string, resources: any[], language: string = 'en') {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
     const prompt = `
@@ -65,7 +73,7 @@ You are a kind helper for someone who needs free help in San Diego.
 User asked: "${query}"
 Resources found:
 ${resources.map((r: any) => `- ${r.name}, ${r.address}, Hours: ${r.hours}, Phone: ${r.phone}`).join('\n')}
-
+${language === 'es' ? 'Write the answer in Spanish.' : ''}
 Write a short spoken answer in simple, plain language (6th grade level).
 Start with the closest/best option. Give name, address, and hours.
 Keep it under 80 words. No bullet points, just sentences to be read out loud.
@@ -75,7 +83,7 @@ If no resources, say so kindly and suggest calling 211.
     return result.response.text().trim();
   } catch (e) {
     console.error('summarizeResources fell back to template:', (e as Error)?.message);
-    return templateSummary(resources);
+    return templateSummary(resources, language);
   }
 }
 

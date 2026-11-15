@@ -11,11 +11,25 @@ export default function Home() {
   const [listening, setListening] = useState(false);
   const [micSupported, setMicSupported] = useState(false);
   const [micStatus, setMicStatus] = useState<string | null>(null);
+  const [stats, setStats] = useState<{ count: number; updated: string | null } | null>(null);
   const recRef = useRef<any>(null);
   const wantListeningRef = useRef(false);
 
   useEffect(() => {
     setMicSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  }, []);
+
+  // Live-data footer: count all resources across types + newest last_scraped.
+  useEffect(() => {
+    (async () => {
+      try {
+        const rows = (await Promise.all(
+          ['food', 'shelter', 'clinic'].map((t) => fetch(`/api/resources?type=${t}`).then((r) => r.json())),
+        )).flatMap((d) => d.resources || []);
+        const updated = rows.map((r: any) => r.last_scraped).filter(Boolean).sort().pop() || null;
+        setStats({ count: rows.length, updated });
+      } catch { /* footer stays hidden; the demo doesn't depend on it */ }
+    })();
   }, []);
 
   // Browser speech-to-text (Web Speech API, Chrome/Edge). Fills the input
@@ -153,18 +167,25 @@ export default function Home() {
           {loading ? 'Finding help…' : '🔊 Ask out loud'}
         </button>
         {micSupported && (
-          <button onClick={listening ? stopListening : listen} style={{ padding: 16, borderRadius: 12, background: listening ? '#b91c1c' : undefined, color: listening ? '#fff' : undefined }}>
+          <button onClick={listening ? stopListening : listen} style={{ padding: 16, borderRadius: 12, background: listening ? '#b91c1c' : undefined, color: listening ? '#fff' : undefined, animation: listening ? 'pulse 1.2s ease-in-out infinite' : undefined }}>
             {listening ? '■ Stop' : '🎤 Speak'}
           </button>
         )}
         <button onClick={() => setQuery('I need a shelter in Downtown tonight')} style={{ padding: 16, borderRadius: 12 }}>Shelter</button>
         <button onClick={() => setQuery('I need a free clinic near City Heights')} style={{ padding: 16, borderRadius: 12 }}>Clinic</button>
       </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        {['La Jolla', 'Downtown', 'City Heights'].map((area) => (
+          <button key={area} onClick={() => setQuery(`I need free food near ${area} today`)} style={{ padding: '8px 12px', borderRadius: 20, border: '1px solid #999', background: '#fff', cursor: 'pointer' }}>
+            📍 {area}
+          </button>
+        ))}
+      </div>
       {micStatus && <p style={{ fontSize: 14, color: '#333', marginTop: 8 }}>{micStatus}</p>}
       {!micSupported && <p style={{ fontSize: 13, color: '#666' }}>Tip: use Chrome or Edge for the Speak button — other browsers hide it and typing still works.</p>}
 
       {answer && (
-        <div style={{ marginTop: 24, padding: 20, background: '#f0f7ff', borderRadius: 12 }}>
+        <div style={{ marginTop: 24, padding: 20, background: '#f0f7ff', borderRadius: 12, animation: 'fadeUp .4s ease' }}>
           <h2>Answer</h2>
           <p style={{ fontSize: 18, lineHeight: 1.5 }}>{answer}</p>
           {fallbackAudio && <p style={{ fontSize: 13, color: '#666' }}>Playing a pre-recorded answer — live voice is unavailable right now.</p>}
@@ -173,13 +194,21 @@ export default function Home() {
       )}
 
       {resources.map((r: any) => (
-        <div key={r.id} style={{ marginTop: 12, padding: 16, border: '1px solid #ddd', borderRadius: 12 }}>
+        <div key={r.id} style={{ marginTop: 12, padding: 16, border: '1px solid #ddd', borderRadius: 12, animation: 'fadeUp .4s ease' }}>
           <strong>{r.name}</strong> — {r.type}
           <br />{r.address}
-          <br />Hours: {r.hours} • Phone: {r.phone}
+          <br />Hours: {r.hours} • Phone: {r.phone ? <a href={`tel:${r.phone.replace(/[^0-9]/g, '')}`}>{r.phone}</a> : 'not listed'}
+          {r.website && (<><br /><a href={r.website} target="_blank" rel="noreferrer">Visit website ↗</a></>)}
           <br /><small>Last updated: {r.last_scraped ? new Date(r.last_scraped).toLocaleString() : 'seed data'}</small>
         </div>
       ))}
+
+      <style>{`@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } } @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(185,28,28,.5); } 50% { box-shadow: 0 0 0 8px rgba(185,28,28,0); } }`}</style>
+      <footer style={{ marginTop: 32, paddingTop: 16, borderTop: '1px solid #ddd', fontSize: 13, color: '#666' }}>
+        <p>How it works: Bright Data scrapes live listings → Neon stores them → Gemini understands + summarizes → ElevenLabs speaks the answer.</p>
+        {stats && <p>📊 {stats.count} resources in the database{stats.updated ? ` · last updated ${new Date(stats.updated).toLocaleString()}` : ''}.</p>}
+        <p>Free help in San Diego County — or dial 211 any time.</p>
+      </footer>
     </main>
   );
 }

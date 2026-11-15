@@ -1,6 +1,6 @@
 # Devpost Draft — VoiceBridge SD
 
-> STATUS Sat 2:40pm: demo works end to end (ask -> Neon -> spoken answer in ~11 sec). Seeded 12 real listings in Neon. Still pending: Bright Data zone `voicebridge_sd` creation + scrape rerun (Cici, in dashboard), SpaceXSI Cursor Pro + Grok Bot (workshop 2:45pm). Paste repo + video links at the bottom before submitting.
+> STATUS Sat 4:10pm: demo works end to end (ask -> Neon -> spoken answer in ~11 sec). Spanish answers built in (Gemini + fallback template both answer in Spanish). 🎤 Speak mic fixed, area chips + live-data footer added. Seeded 12 real listings in Neon. SpaceXSI promo code obtained ~4:06pm — Cursor Pro + Grok Bot setup still to confirm. Still pending: Bright Data zone `voicebridge_sd` creation + scrape rerun (Cici, in dashboard), and one observed live Gemini call. Paste video link at the bottom before submitting.
 
 ## Tagline
 Voice-first help finder for San Diego — speak what you need, hear where to go.
