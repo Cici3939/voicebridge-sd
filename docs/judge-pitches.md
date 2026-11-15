@@ -1,6 +1,6 @@
 # Judge Pitches — 3 min present + 2 min Q&A each
 
-> STATUS Sat 4:33pm: demo works end to end (~11 sec, speaks out loud), mic button fixed (keeps listening across pauses, red Stop button, on-screen mic errors), Spanish answers + area chips + live-data footer added (commit 2c56d95 — test the Spanish question before claiming it to judges). Bright Data live scrape still blocked on the missing `voicebridge_sd` zone — if it's still blocked at judging, show the seeded real listings + scraper logs and say so honestly. SpaceXSI promo code obtained ~4:06pm; Cursor Pro + Grok Bot setup still to confirm — don't claim Grok Bot until it is actually switched on.
+> STATUS Sat 5:20pm: demo works end to end (~11 sec, speaks out loud), mic button fixed (keeps listening across pauses, red Stop button, on-screen mic errors), Spanish answers + area chips + live-data footer added (commit 2c56d95 — test the Spanish question before claiming it to judges). Bright Data live scrape still blocked on the missing `voicebridge_sd` zone — if it's still blocked at judging, show the seeded real listings + scraper logs and say so honestly. SpaceXSI CONFIRMED: promo redeemed, Cursor Pro ran the Gemini test, Grok Bot triaged issue #1 and posted the fix plan. Gemini test ~5:04pm got a 503 (model busy, not a code bug) — retry before claiming a live Gemini answer.
 
 You get a different judge per track. Don't give the same pitch to everyone. Lead with what THEY care about.
 
@@ -8,7 +8,7 @@ You get a different judge per track. Don't give the same pitch to everyone. Lead
 Lead: "We scrape live data to help people find free food and shelter today."
 Show: `last_scraped` timestamp in Neon, the scraper log, and 2-3 real listings you scraped this weekend.
 Say: "This is not mock data. Bright Data lets us pull from 211 San Diego and Feeding San Diego, and we store it with a timestamp so you know it's fresh."
-Q&A prep: What sources? How often do you re-scrape? What if a site blocks you? → Answer: seed fallback + show scraper code.
+Q&A prep: What sources? How often do you re-scrape? What if a site blocks you? → Answer: seed fallback + show scraper code. (Our Grok Bot automation independently triaged this exact issue and reached the same diagnosis — the zone is missing, not the code.)
 
 ## 2. Neon judge — Best Database-Driven / Agent Backend
 Lead: "Everything lives in Neon Postgres, the app queries it live."
@@ -29,10 +29,10 @@ Lead: "Gemini does the understanding and the plain-language summary."
 Show: the parseQuery prompt + the summarize prompt in `lib/voicebridge.ts`.
 Say: "Gemini turns 'I need free food near La Jolla' into {type: food, area: La Jolla} and then turns 3 database rows into one 80-word spoken answer a 6th-grader can follow."
 Q&A prep: Which model? → gemini-3.8-flash via Google AI Studio. Why Gemini? → fast, good at structured parsing + summarization.
-Honesty note: live Gemini calls have timed out so far and the keyword/template fallback carried the demo — only claim Gemini produced a specific answer after a live call is observed returning (run `npx tsx scripts/test-gemini.ts` in Cursor tonight).
+Honesty note: live Gemini calls have failed so far — the ~5:04pm test got a 503 "high demand" from Google, and before that both calls timed out, so the keyword/template fallback carried the demo. Only claim Gemini produced a specific answer after a live call is observed returning OK (retry `npx tsx scripts/test-gemini.ts` in Cursor).
 
 ## 5. Best Overall / Most Innovative judge
-Lead: "Real problem, working demo, live data."
+Lead: "Real problem, working demo, real data."
 Do the full 30-second voice demo first, then the tech stack in 30 seconds.
 Say: "Solo, in 26 hours, with live data, a real database, and voice as the interface."
 
