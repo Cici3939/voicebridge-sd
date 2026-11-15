@@ -34,6 +34,7 @@ export default function Home() {
   const [listening, setListening] = useState(false);
   const [micSupported, setMicSupported] = useState(false);
   const [micStatus, setMicStatus] = useState<string | null>(null);
+  const [micLang, setMicLang] = useState<'en' | 'es'>('en');
   const [stats, setStats] = useState<{ count: number; updated: string | null } | null>(null);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const recRef = useRef<any>(null);
@@ -116,7 +117,10 @@ export default function Home() {
 
     const rec = new SR();
     recRef.current = rec;
-    rec.lang = 'en-US';
+    // Mic language matters: an English recognizer mangles Spanish speech
+    // into gibberish, which the parser then defaults to food. The EN/ES
+    // toggle next to Speak picks which language the mic listens in.
+    rec.lang = micLang === 'es' ? 'es-US' : 'en-US';
     rec.continuous = true;
     rec.interimResults = true;
     rec.maxAlternatives = 1;
@@ -303,16 +307,27 @@ export default function Home() {
             {loading ? 'Finding help…' : 'Answer out loud'}
           </button>
           {micSupported ? (
-            <button
-              type="button"
-              className={`vb-btn vb-btn-mic${listening ? ' is-on' : ''}`}
-              onClick={() => (listening ? stopListening('user') : listen())}
-              aria-pressed={listening}
-              title={listening ? 'Stop the microphone' : 'Fill the box with your voice'}
-            >
-              <span className="vb-btn-icon" aria-hidden>{listening ? '■' : '🎤'}</span>
-              {listening ? 'Stop mic' : 'Speak'}
-            </button>
+            <>
+              <button
+                type="button"
+                className={`vb-btn vb-btn-mic${listening ? ' is-on' : ''}`}
+                onClick={() => (listening ? stopListening('user') : listen())}
+                aria-pressed={listening}
+                title={listening ? 'Stop the microphone' : 'Fill the box with your voice'}
+              >
+                <span className="vb-btn-icon" aria-hidden>{listening ? '■' : '🎤'}</span>
+                {listening ? 'Stop mic' : 'Speak'}
+              </button>
+              <button
+                type="button"
+                className="vb-chip"
+                onClick={() => setMicLang(micLang === 'es' ? 'en' : 'es')}
+                aria-pressed={micLang === 'es'}
+                title={micLang === 'es' ? 'Mic listens in Spanish — tap for English' : 'Mic listens in English — tap for Spanish'}
+              >
+                Mic: {micLang === 'es' ? 'Español' : 'English'}
+              </button>
+            </>
           ) : null}
         </div>
 
