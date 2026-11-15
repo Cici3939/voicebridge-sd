@@ -60,6 +60,11 @@ successful live Gemini call.
   used them all. Retry in ~4h (resets ~midnight). This ALSO explains the
   scrape's 0 listings: extraction uses Gemini too, so it hit the same
   wall. The code is fine; the quota is the limit.
+- ~8:02 PM: a second key in a NEW project was made tonight — the 429
+  is GONE, so the new key works and has quota. But the test now fails
+  with 503 "high demand" (the model is busy, temporary). Retry the test
+  in ~10 min; each try uses 1 of the new 20, so don't spam it. Hold the
+  scrape rerun until the test prints OK.
 - Sunday quota budget: 20 fresh requests. Each Ask = 2 (parse +
   summary). Test once, scrape once, save the rest for the video +
   judging demos — do not burn requests on casual re-tests. Option:
