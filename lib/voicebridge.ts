@@ -63,17 +63,36 @@ If unclear, type is "food" and area is null.
   }
 }
 
+const SPANISH_DIGITS = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+
+// Speak a phone number digit-by-digit in Spanish: "(858) 527-1419" ->
+// "ocho cinco ocho, cinco dos siete, uno cuatro uno nueve". Digits carry
+// no language, so TTS reads them in English unless spelled out — that's
+// the Spanglish in the spoken answer. Returns null when there is no
+// usable number (e.g. "Check website").
+function phoneToSpanishWords(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const groups = phone.split(/[^0-9]+/).filter(Boolean);
+  if (!groups.length) return null;
+  return groups
+    .map((g) => g.split('').map((d) => SPANISH_DIGITS[Number(d)]).join(' '))
+    .join(', ');
+}
+
 // No-Gemini fallback: plain template summary from the rows.
 function templateSummary(resources: any[], language: string = 'en') {
   if (!resources.length) {
     return language === 'es'
-      ? 'Lo siento, no encontré nada. Llama al 211 para ayuda gratis.'
+      ? 'Lo siento, no encontré nada. Llama al dos uno uno para ayuda gratis.'
       : 'Sorry, I could not find anything. Try calling 211.';
   }
   const top = resources.slice(0, 3);
   if (language === 'es') {
     return `Estas son ${top.length} opciones: ` +
-      top.map((r: any) => `${r.name}, ${r.address || 'dirección no disponible'}. Horario: ${r.hours || 'no disponible'}. Teléfono: ${r.phone || 'no disponible'}.`).join(' ');
+      top.map((r: any) => {
+        const phoneWords = phoneToSpanishWords(r.phone);
+        return `${r.name}, ${r.address || 'dirección no disponible'}. Horario: ${r.hours || 'no disponible'}. Teléfono: ${phoneWords || 'no disponible'}.`;
+      }).join(' ');
   }
   return `Here ${top.length === 1 ? 'is' : 'are'} ${top.length} option${top.length === 1 ? '' : 's'}: ` +
     top.map((r: any) => `${r.name}, ${r.address || 'address not listed'}. Hours: ${r.hours || 'not listed'}. Phone: ${r.phone || 'not listed'}.`).join(' ');
