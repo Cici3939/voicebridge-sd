@@ -1,14 +1,14 @@
 # Judge Pitches — 3 min present + 2 min Q&A each
 
-> STATUS Sat 5:20pm: demo works end to end (~11 sec, speaks out loud), mic button fixed (keeps listening across pauses, red Stop button, on-screen mic errors), Spanish answers + area chips + live-data footer added (commit 2c56d95 — test the Spanish question before claiming it to judges). Bright Data live scrape still blocked on the missing `voicebridge_sd` zone — if it's still blocked at judging, show the seeded real listings + scraper logs and say so honestly. SpaceXSI CONFIRMED: promo redeemed, Cursor Pro ran the Gemini test, Grok Bot triaged issue #1 and posted the fix plan. Gemini test ~5:04pm got a 503 (model busy, not a code bug) — retry before claiming a live Gemini answer.
+> STATUS Sat 7:59pm: demo works end to end (~11 sec, speaks out loud), mic button fixed + VoiceTide interactive art merged (build verified clean), Spanish answers + area chips + live-data footer added (test the Spanish question before claiming it to judges). Bright Data zone `voicebridge_sd` CREATED — the 400 is fixed and the scrape runs, but it extracts 0 listings because Gemini's free-tier quota (20/day) is exhausted (429) — extraction uses Gemini too. Second Gemini key in a new project is being made tonight for a fresh 20; otherwise the quota resets ~midnight. SpaceXSI CONFIRMED: promo redeemed, Cursor Pro ran the Gemini test + UI polish + mic fix + VoiceTide, Grok Bot triaged issue #1 and posted the fix plan.
 
 You get a different judge per track. Don't give the same pitch to everyone. Lead with what THEY care about.
 
 ## 1. Bright Data judge — Data for Good ($1,000 / $750 / $500)
 Lead: "We scrape live data to help people find free food and shelter today."
-Show: `last_scraped` timestamp in Neon, the scraper log, and 2-3 real listings you scraped this weekend.
+Show: `last_scraped` timestamp in Neon, the scraper log, and 2-3 real listings — scraped ones if the scrape upserts any, otherwise the 12 seeded real listings + the clean scrape log (no errors since the zone was created).
 Say: "This is not mock data. Bright Data lets us pull from 211 San Diego and Feeding San Diego, and we store it with a timestamp so you know it's fresh."
-Q&A prep: What sources? How often do you re-scrape? What if a site blocks you? → Answer: seed fallback + show scraper code. (Our Grok Bot automation independently triaged this exact issue and reached the same diagnosis — the zone is missing, not the code.)
+Q&A prep: What sources? How often do you re-scrape? What if a site blocks you? → Answer: seed fallback + show scraper code. (Grok Bot independently triaged the original 400 and reached the same diagnosis — the zone was missing, not the code. The zone is now created; if the scrape still shows 0 listings, it's the Gemini quota, not the scraper.)
 
 ## 2. Neon judge — Best Database-Driven / Agent Backend
 Lead: "Everything lives in Neon Postgres, the app queries it live."
@@ -29,7 +29,7 @@ Lead: "Gemini does the understanding and the plain-language summary."
 Show: the parseQuery prompt + the summarize prompt in `lib/voicebridge.ts`.
 Say: "Gemini turns 'I need free food near La Jolla' into {type: food, area: La Jolla} and then turns 3 database rows into one 80-word spoken answer a 6th-grader can follow."
 Q&A prep: Which model? → gemini-3.8-flash via Google AI Studio. Why Gemini? → fast, good at structured parsing + summarization.
-Honesty note: live Gemini calls have failed so far — the ~5:04pm test got a 503 "high demand" from Google, and before that both calls timed out, so the keyword/template fallback carried the demo. Only claim Gemini produced a specific answer after a live call is observed returning OK (retry `npx tsx scripts/test-gemini.ts` in Cursor).
+Honesty note: live Gemini calls have failed so far — the ~7:57pm test got a 429 "quota exceeded" (free tier is 20 requests/day, used up by testing + scrapes; resets ~midnight), and before that a 503 "high demand" plus timeouts, so the keyword/template fallback carried the demo. A second key in a new project is being made tonight for a fresh 20. Only claim Gemini produced a specific answer after a live call is observed returning OK (retry `npx tsx scripts/test-gemini.ts` in Cursor). Sunday budget: each Ask = 2 requests, so save them for the video + judging demos.
 
 ## 5. Best Overall / Most Innovative judge
 Lead: "Real problem, working demo, real data."
