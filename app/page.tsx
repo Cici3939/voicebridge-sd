@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import VoiceTide from './VoiceTide';
 
 type Resource = {
   id: string | number;
@@ -34,11 +35,19 @@ export default function Home() {
   const [micSupported, setMicSupported] = useState(false);
   const [micStatus, setMicStatus] = useState<string | null>(null);
   const [stats, setStats] = useState<{ count: number; updated: string | null } | null>(null);
+  const [audioPlaying, setAudioPlaying] = useState(false);
   const recRef = useRef<any>(null);
   const wantListeningRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     setMicSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+    return () => {
+      wantListeningRef.current = false;
+      try { recRef.current?.abort?.(); } catch { /* ignore */ }
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    };
   }, []);
 
   // Live-data footer: count all resources across types + newest last_scraped.
@@ -54,18 +63,57 @@ export default function Home() {
     })();
   }, []);
 
+  function stopAnswerAudio() {
+    const el = audioRef.current;
+    if (!el) return;
+    el.pause();
+    el.currentTime = 0;
+    setAudioPlaying(false);
+  }
+
+  // Autoplay through the same <audio controls> element after React mounts/updates it.
+  useEffect(() => {
+    if (!audioUrl) return;
+    const el = audioRef.current;
+    if (!el) return;
+    el.src = audioUrl;
+    const playPromise = el.play();
+    if (playPromise) playPromise.catch(() => setAudioPlaying(false));
+  }, [audioUrl]);
+
+  function stopListening(reason: 'user' | 'answer' | 'quiet' = 'user') {
+    wantListeningRef.current = false;
+    const rec = recRef.current;
+    recRef.current = null;
+    if (rec) {
+      try { rec.onresult = null; rec.onend = null; rec.onerror = null; } catch { /* ignore */ }
+      try { rec.abort(); } catch {
+        try { rec.stop(); } catch { /* already stopped */ }
+      }
+    }
+    setListening(false);
+    if (reason === 'quiet') return;
+    if (reason === 'answer') {
+      setMicStatus('Mic off — finding your spoken answer…');
+      return;
+    }
+    setMicStatus((s) => (s && s.startsWith('Heard you') ? s : 'Stopped listening — tap “Answer out loud” for the spoken reply.'));
+  }
+
   // Browser speech-to-text (Web Speech API, Chrome/Edge). Fills the input
-  // with what the user said — they still tap "Ask out loud" to get the
+  // with what the user said — they still tap "Answer out loud" to get the
   // spoken answer, so a mic failure can never break the demo.
-  //
-  // Fixed Sat 3:40pm: the old version stopped silently the moment Chrome
-  // paused or hit an error (no-speech / mic blocked), so "Speak" looked
-  // like it "ended right after clicking" with no explanation. Now it
-  // keeps listening across pauses (continuous + interim results), shows
-  // live status, and explains exactly what went wrong.
   function listen() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR) {
+      setMicStatus('Speech recognition isn’t available here — type your need, then tap “Answer out loud”.');
+      return;
+    }
+
+    // Tear down any prior session so a stuck recognizer can’t block Speak.
+    stopListening('quiet');
+    stopAnswerAudio();
+
     const rec = new SR();
     recRef.current = rec;
     rec.lang = 'en-US';
@@ -75,7 +123,8 @@ export default function Home() {
     rec.onresult = (e: any) => {
       let finalText = '';
       let interimText = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      // Rebuild from the full result list so pauses don’t wipe earlier words.
+      for (let i = 0; i < e.results.length; i++) {
         const transcript = e.results[i][0].transcript;
         if (e.results[i].isFinal) finalText += transcript;
         else interimText += transcript;
@@ -83,20 +132,35 @@ export default function Home() {
       const heard = (finalText || interimText).trim();
       if (heard) {
         setQuery(heard);
-        setMicStatus(finalText ? 'Heard you — tap “Ask out loud” to get the answer.' : 'Listening… keep talking.');
+        setMicStatus(finalText
+          ? 'Heard you — tap “Answer out loud” for the spoken reply.'
+          : 'Listening… keep talking.');
       }
     };
     rec.onend = () => {
+      if (recRef.current !== rec) return;
       // Chrome ends a session after a pause even in continuous mode —
-      // restart while the user still wants to talk, so it never looks
-      // like it died right after clicking.
+      // restart while the user still wants to talk.
       if (wantListeningRef.current) {
-        try { rec.start(); return; } catch { /* already started */ }
+        try { rec.start(); return; } catch {
+          setTimeout(() => {
+            if (wantListeningRef.current && recRef.current === rec) {
+              try { rec.start(); } catch {
+                wantListeningRef.current = false;
+                setListening(false);
+                setMicStatus('Mic paused — tap Speak to start again.');
+              }
+            }
+          }, 200);
+          return;
+        }
       }
       setListening(false);
     };
     rec.onerror = (e: any) => {
+      if (recRef.current !== rec) return;
       const code = e?.error || 'unknown';
+      if (code === 'aborted') return; // stopListening / Answer out loud
       if (code === 'not-allowed' || code === 'service-not-allowed') {
         wantListeningRef.current = false;
         setListening(false);
@@ -107,33 +171,46 @@ export default function Home() {
         setMicStatus('No microphone found — check the mic is plugged in / selected, then tap Speak again.');
       } else if (code === 'no-speech') {
         setMicStatus('Didn\'t hear anything — speak a little louder and closer to the mic. Still listening…');
-      } else if (code === 'aborted') {
-        // User tapped Stop; not an error.
       } else {
-        setMicStatus(`Mic error (${code}) — tap Speak again, or just type and tap “Ask out loud”.`);
+        wantListeningRef.current = false;
+        setListening(false);
+        setMicStatus(`Mic error (${code}) — tap Speak again, or type and tap “Answer out loud”.`);
       }
     };
+
     wantListeningRef.current = true;
     setListening(true);
-    setMicStatus('Listening… speak now — tap Stop when you\'re done.');
+    setMicStatus('Listening… speak now — tap Stop when you’re done.');
     try {
       rec.start();
     } catch {
       // start() throws if a previous session is still winding down.
-      setTimeout(() => { try { rec.start(); } catch { setListening(false); } }, 250);
+      setTimeout(() => {
+        if (!wantListeningRef.current || recRef.current !== rec) return;
+        try {
+          rec.start();
+        } catch {
+          wantListeningRef.current = false;
+          setListening(false);
+          setMicStatus('Couldn’t start the mic — tap Speak again.');
+        }
+      }, 280);
     }
   }
 
-  function stopListening() {
-    wantListeningRef.current = false;
-    try { recRef.current?.stop(); } catch { /* already stopped */ }
-    setListening(false);
-    setMicStatus((s) => (s && s.startsWith('Heard you') ? s : 'Stopped listening — tap “Ask out loud” to get the answer.'));
-  }
-
   async function ask() {
+    stopListening('answer');
+    stopAnswerAudio();
     setLoading(true);
     setAnswer('');
+    setResources([]);
+    setAudioUrl(null);
+    setFallbackAudio(false);
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 45000);
     try {
@@ -149,9 +226,9 @@ export default function Home() {
       if (data.audioBase64) {
         const blob = new Blob([Uint8Array.from(atob(data.audioBase64), (c) => c.charCodeAt(0))], { type: 'audio/mpeg' });
         const url = URL.createObjectURL(blob);
+        blobUrlRef.current = url;
         setAudioUrl(url);
         setFallbackAudio(false);
-        new Audio(url).play();
       } else {
         // Live TTS flaked — play the pre-recorded fallback for this type
         // (public/fallback-audio/*.mp3) so the demo still speaks.
@@ -159,7 +236,6 @@ export default function Home() {
         const url = `/fallback-audio/${t}.mp3`;
         setAudioUrl(url);
         setFallbackAudio(true);
-        new Audio(url).play().catch(() => {});
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') {
@@ -174,8 +250,18 @@ export default function Home() {
     }
   }
 
+  const artMode = listening ? 'listening' : loading ? 'loading' : audioPlaying ? 'speaking' : 'idle';
+
+  function fillExample(kind: 'food' | 'shelter' | 'clinic') {
+    if (kind === 'food') setQuery('I need free food near La Jolla today');
+    else if (kind === 'shelter') setQuery('I need a shelter in Downtown tonight');
+    else setQuery('I need a free clinic near City Heights');
+    setMicStatus('Filled an example from the tide — tap “Answer out loud” for the spoken reply.');
+  }
+
   return (
-    <main className="vb">
+    <main className={`vb mode-${artMode}`}>
+      <div className="vb-aurora" aria-hidden />
       <header className="vb-mission" aria-labelledby="vb-brand">
         <p className="vb-eyebrow">San Diego · free help · voice-first</p>
         <h1 id="vb-brand" className="vb-brand">VoiceBridge SD</h1>
@@ -188,6 +274,8 @@ export default function Home() {
           <li><span className="dot clinic" aria-hidden /> Clinic</li>
         </ul>
       </header>
+
+      <VoiceTide mode={artMode} onFill={fillExample} />
 
       <section className="vb-ask" aria-label="Ask for help">
         <label className="vb-label" htmlFor="need-input">What do you need?</label>
@@ -212,18 +300,18 @@ export default function Home() {
             aria-busy={loading}
           >
             <span className="vb-btn-icon" aria-hidden>{loading ? '…' : '🔊'}</span>
-            {loading ? 'Finding help…' : 'Ask out loud'}
+            {loading ? 'Finding help…' : 'Answer out loud'}
           </button>
           {micSupported ? (
             <button
               type="button"
               className={`vb-btn vb-btn-mic${listening ? ' is-on' : ''}`}
-              onClick={listening ? stopListening : listen}
+              onClick={() => (listening ? stopListening('user') : listen())}
               aria-pressed={listening}
-              title={listening ? 'Stop listening' : 'Speak your need into the mic'}
+              title={listening ? 'Stop the microphone' : 'Fill the box with your voice'}
             >
               <span className="vb-btn-icon" aria-hidden>{listening ? '■' : '🎤'}</span>
-              {listening ? 'Stop' : 'Speak'}
+              {listening ? 'Stop mic' : 'Speak'}
             </button>
           ) : null}
         </div>
@@ -236,42 +324,42 @@ export default function Home() {
         )}
 
         <div className="vb-shortcuts">
-          <p className="vb-label-sm">Try a need</p>
-          <div className="vb-chip-row" role="group" aria-label="Quick need examples">
+          <p className="vb-label-sm">Fill examples (does not answer yet)</p>
+          <div className="vb-chip-row" role="group" aria-label="Fill the text box with an example need">
             <button
               type="button"
               className="vb-chip food"
               onClick={() => setQuery('I need free food near La Jolla today')}
-              title="Fill: free food near La Jolla"
+              title="Only fills the text box — then tap Answer out loud"
             >
-              <span aria-hidden>🍲</span> Food
+              <span aria-hidden>🍲</span> Food example
             </button>
             <button
               type="button"
               className="vb-chip shelter"
               onClick={() => setQuery('I need a shelter in Downtown tonight')}
-              title="Fill: shelter in Downtown"
+              title="Only fills the text box — then tap Answer out loud"
             >
-              <span aria-hidden>🏠</span> Shelter
+              <span aria-hidden>🏠</span> Shelter example
             </button>
             <button
               type="button"
               className="vb-chip clinic"
               onClick={() => setQuery('I need a free clinic near City Heights')}
-              title="Fill: free clinic near City Heights"
+              title="Only fills the text box — then tap Answer out loud"
             >
-              <span aria-hidden>✚</span> Clinic
+              <span aria-hidden>✚</span> Clinic example
             </button>
           </div>
-          <p className="vb-label-sm">Near</p>
-          <div className="vb-chip-row" role="group" aria-label="Quick area examples">
+          <p className="vb-label-sm">Fill area into a food example</p>
+          <div className="vb-chip-row" role="group" aria-label="Fill the text box with a food need near an area">
             {['La Jolla', 'Downtown', 'City Heights'].map((area) => (
               <button
                 key={area}
                 type="button"
                 className="vb-chip area"
                 onClick={() => setQuery(`I need free food near ${area} today`)}
-                title={`Fill: free food near ${area}`}
+                title={`Only fills the text box with food near ${area}`}
               >
                 <span aria-hidden>📍</span> {area}
               </button>
@@ -284,7 +372,11 @@ export default function Home() {
         <section className="vb-answer" aria-live="polite" aria-label="Spoken answer">
           <div className="vb-answer-head">
             <h2>Your spoken answer</h2>
-            {audioUrl && <span className="vb-playing-tag">Audio ready</span>}
+            {audioUrl && (
+              <span className="vb-playing-tag" aria-live="polite">
+                {audioPlaying ? 'Speaking now' : 'Paused — use player to replay'}
+              </span>
+            )}
           </div>
           <p className="vb-answer-text">{answer}</p>
           {fallbackAudio && (
@@ -292,8 +384,16 @@ export default function Home() {
           )}
           {audioUrl && (
             <div className="vb-audio">
-              <label className="vb-label-sm" htmlFor="answer-audio">Replay aloud</label>
-              <audio id="answer-audio" controls src={audioUrl} />
+              <label className="vb-label-sm" htmlFor="answer-audio">Same audio (pause / replay)</label>
+              <audio
+                id="answer-audio"
+                ref={audioRef}
+                controls
+                src={audioUrl}
+                onPlay={() => setAudioPlaying(true)}
+                onPause={() => setAudioPlaying(false)}
+                onEnded={() => setAudioPlaying(false)}
+              />
             </div>
           )}
         </section>
@@ -303,14 +403,18 @@ export default function Home() {
         <section className="vb-results" aria-label="Matching resources">
           <h2 className="vb-results-title">{resources.length} place{resources.length === 1 ? '' : 's'} nearby</h2>
           <ul className="vb-cards">
-            {resources.map((r) => {
+            {resources.map((r, i) => {
               const meta = typeMeta(r.type);
               const tel = r.phone ? r.phone.replace(/[^0-9+]/g, '') : '';
               return (
                 <li
                   key={r.id}
                   className="vb-card"
-                  style={{ borderColor: meta.accent, background: meta.soft }}
+                  style={{
+                    borderColor: meta.accent,
+                    background: meta.soft,
+                    animationDelay: `${i * 0.08}s`,
+                  }}
                 >
                   <div className="vb-card-top">
                     <span className="vb-type-badge" style={{ background: meta.accent }}>
@@ -329,7 +433,7 @@ export default function Home() {
                         <span aria-hidden>📞</span> Call {r.phone}
                       </a>
                     ) : (
-                      <span className="vb-link-btn disabled" title="No phone listed">Phone not listed</span>
+                      <p className="vb-card-meta">Phone not listed</p>
                     )}
                     {r.website && (
                       <a
@@ -391,12 +495,69 @@ export default function Home() {
           min-height: 100vh;
           box-sizing: border-box;
           animation: vbFade 0.5s ease;
+          position: relative;
+          overflow-x: clip;
         }
         .vb *, .vb *::before, .vb *::after { box-sizing: border-box; }
+        .vb-aurora {
+          pointer-events: none;
+          position: absolute;
+          inset: -10% -20% auto;
+          height: 420px;
+          background:
+            radial-gradient(closest-side, rgba(126, 184, 201, 0.35), transparent 70%),
+            radial-gradient(closest-side, rgba(45, 106, 79, 0.18), transparent 70%);
+          background-size: 55% 70%, 40% 55%;
+          background-position: 10% 40%, 90% 20%;
+          background-repeat: no-repeat;
+          filter: blur(8px);
+          animation: vbAurora 14s ease-in-out infinite alternate;
+          z-index: 0;
+        }
+        .vb.mode-listening .vb-aurora {
+          background:
+            radial-gradient(closest-side, rgba(180, 35, 24, 0.22), transparent 70%),
+            radial-gradient(closest-side, rgba(126, 184, 201, 0.28), transparent 70%);
+        }
+        .vb.mode-speaking .vb-aurora {
+          background:
+            radial-gradient(closest-side, rgba(14, 77, 104, 0.28), transparent 70%),
+            radial-gradient(closest-side, rgba(45, 106, 79, 0.2), transparent 70%);
+        }
+        .vb.mode-loading .vb-aurora {
+          animation-duration: 4s;
+        }
+        .vb > *:not(.vb-aurora) { position: relative; z-index: 1; }
+
+        .vb-tide {
+          margin: 0 0 22px;
+          height: clamp(200px, 32vw, 260px);
+          border-radius: 22px;
+          overflow: hidden;
+          border: 1px solid color-mix(in srgb, var(--shelter) 22%, white);
+          box-shadow:
+            0 18px 40px rgba(14, 77, 104, 0.1),
+            inset 0 1px 0 rgba(255,255,255,0.7);
+          background: linear-gradient(180deg, #e7f4f8 0%, #f7fbfc 55%, #e8f3f0 100%);
+          animation: vbRise 0.7s ease;
+          touch-action: none;
+        }
+        .vb-tide-canvas {
+          display: block;
+          width: 100%;
+          height: 100%;
+          cursor: crosshair;
+        }
+        .vb-tide-canvas.is-listening {
+          animation: vbTideGlow 1.4s ease-in-out infinite;
+        }
+        .vb-tide-canvas.is-speaking {
+          animation: vbTideSpeak 2s ease-in-out infinite;
+        }
 
         .vb-mission {
-          margin-bottom: 28px;
-          padding-bottom: 22px;
+          margin-bottom: 18px;
+          padding-bottom: 18px;
           border-bottom: 1px solid var(--line);
           animation: vbRise 0.55s ease;
         }
@@ -414,7 +575,12 @@ export default function Home() {
           font-size: clamp(2.6rem, 7vw, 3.6rem);
           line-height: 1.05;
           letter-spacing: -0.02em;
-          color: var(--ocean);
+          background: linear-gradient(120deg, var(--ocean) 0%, #1a5f7a 45%, #2d6a4f 100%);
+          background-size: 200% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          animation: vbBrandShimmer 8s ease-in-out infinite;
         }
         .vb-mission-line {
           margin: 0 0 16px;
@@ -433,6 +599,7 @@ export default function Home() {
           font-size: 1rem;
           font-weight: 600;
           color: var(--ink);
+          pointer-events: none; /* legend only — not clickable */
         }
         .vb-mission-pills .dot {
           display: inline-block;
@@ -529,12 +696,17 @@ export default function Home() {
         .vb-btn-icon { font-size: 1.2rem; line-height: 1; }
         .vb-btn-primary {
           flex: 1 1 220px;
-          background: var(--ocean);
+          background: linear-gradient(135deg, var(--ocean) 0%, #1a5f7a 55%, #164e63 100%);
+          background-size: 160% 160%;
           color: #fff;
           box-shadow: 0 8px 20px rgba(14, 77, 104, 0.25);
+          animation: vbBtnDrift 6s ease-in-out infinite;
         }
         .vb-btn-primary:hover:not(:disabled) {
-          background: #0a3d53;
+          filter: brightness(1.06);
+        }
+        .vb.mode-loading .vb-btn-primary {
+          animation: vbBtnPulse 1s ease-in-out infinite;
         }
         .vb-btn-mic {
           flex: 0 0 auto;
@@ -625,6 +797,8 @@ export default function Home() {
           background: #eaf6ef;
           padding: 6px 10px;
           border-radius: 999px;
+          cursor: default;
+          pointer-events: none; /* status text, not a control */
         }
         .vb-answer-text {
           margin: 0;
@@ -659,6 +833,12 @@ export default function Home() {
           border: 2px solid;
           border-left-width: 6px;
           box-shadow: 0 8px 22px rgba(20, 35, 43, 0.05);
+          animation: vbCardIn 0.55s ease both;
+          transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .vb-card:hover {
+          transform: translateY(-4px) rotate(-0.2deg);
+          box-shadow: 0 16px 32px rgba(20, 35, 43, 0.1);
         }
         .vb-card-top {
           display: flex;
@@ -723,12 +903,6 @@ export default function Home() {
           color: var(--shelter);
           border-color: color-mix(in srgb, var(--shelter) 35%, white);
         }
-        .vb-link-btn.disabled {
-          background: rgba(20, 35, 43, 0.06);
-          color: var(--muted);
-          cursor: default;
-        }
-
         .vb-footer {
           margin-top: 40px;
           padding-top: 18px;
@@ -757,12 +931,50 @@ export default function Home() {
           0%, 100% { box-shadow: 0 0 0 0 rgba(180, 35, 24, 0.45); }
           50% { box-shadow: 0 0 0 10px rgba(180, 35, 24, 0); }
         }
+        @keyframes vbAurora {
+          from { transform: translate3d(-2%, 0, 0) scale(1); opacity: 0.85; }
+          to { transform: translate3d(3%, 4%, 0) scale(1.06); opacity: 1; }
+        }
+        @keyframes vbBrandShimmer {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes vbBtnDrift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes vbBtnPulse {
+          0%, 100% { transform: translateY(0); box-shadow: 0 8px 20px rgba(14, 77, 104, 0.25); }
+          50% { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(14, 77, 104, 0.4); }
+        }
+        @keyframes vbCardIn {
+          from { opacity: 0; transform: translateY(16px) scale(0.98); }
+          to { opacity: 1; transform: none; }
+        }
+        @keyframes vbTideGlow {
+          0%, 100% { box-shadow: inset 0 0 0 0 rgba(180, 35, 24, 0.15); }
+          50% { box-shadow: inset 0 0 0 3px rgba(180, 35, 24, 0.28); }
+        }
+        @keyframes vbTideSpeak {
+          0%, 100% { filter: saturate(1); }
+          50% { filter: saturate(1.15); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .vb, .vb-mission, .vb-ask, .vb-answer, .vb-results, .vb-tide,
+          .vb-aurora, .vb-brand, .vb-btn-primary, .vb-card,
+          .vb-tide-canvas.is-listening, .vb-tide-canvas.is-speaking {
+            animation: none !important;
+          }
+          .vb-card:hover { transform: none; }
+        }
 
         @media (max-width: 560px) {
           .vb { padding: 20px 16px 40px; }
           .vb-btn { width: 100%; }
           .vb-btn-mic { width: 100%; }
           .vb-card-top { flex-direction: column; align-items: flex-start; }
+          .vb-tide { height: 210px; }
         }
       `}</style>
     </main>
