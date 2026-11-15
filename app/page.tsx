@@ -34,11 +34,19 @@ export default function Home() {
   const [micSupported, setMicSupported] = useState(false);
   const [micStatus, setMicStatus] = useState<string | null>(null);
   const [stats, setStats] = useState<{ count: number; updated: string | null } | null>(null);
+  const [audioPlaying, setAudioPlaying] = useState(false);
   const recRef = useRef<any>(null);
   const wantListeningRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     setMicSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+    return () => {
+      wantListeningRef.current = false;
+      try { recRef.current?.abort?.(); } catch { /* ignore */ }
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    };
   }, []);
 
   // Live-data footer: count all resources across types + newest last_scraped.
@@ -54,18 +62,57 @@ export default function Home() {
     })();
   }, []);
 
+  function stopAnswerAudio() {
+    const el = audioRef.current;
+    if (!el) return;
+    el.pause();
+    el.currentTime = 0;
+    setAudioPlaying(false);
+  }
+
+  // Autoplay through the same <audio controls> element after React mounts/updates it.
+  useEffect(() => {
+    if (!audioUrl) return;
+    const el = audioRef.current;
+    if (!el) return;
+    el.src = audioUrl;
+    const playPromise = el.play();
+    if (playPromise) playPromise.catch(() => setAudioPlaying(false));
+  }, [audioUrl]);
+
+  function stopListening(reason: 'user' | 'answer' | 'quiet' = 'user') {
+    wantListeningRef.current = false;
+    const rec = recRef.current;
+    recRef.current = null;
+    if (rec) {
+      try { rec.onresult = null; rec.onend = null; rec.onerror = null; } catch { /* ignore */ }
+      try { rec.abort(); } catch {
+        try { rec.stop(); } catch { /* already stopped */ }
+      }
+    }
+    setListening(false);
+    if (reason === 'quiet') return;
+    if (reason === 'answer') {
+      setMicStatus('Mic off — finding your spoken answer…');
+      return;
+    }
+    setMicStatus((s) => (s && s.startsWith('Heard you') ? s : 'Stopped listening — tap “Answer out loud” for the spoken reply.'));
+  }
+
   // Browser speech-to-text (Web Speech API, Chrome/Edge). Fills the input
-  // with what the user said — they still tap "Ask out loud" to get the
+  // with what the user said — they still tap "Answer out loud" to get the
   // spoken answer, so a mic failure can never break the demo.
-  //
-  // Fixed Sat 3:40pm: the old version stopped silently the moment Chrome
-  // paused or hit an error (no-speech / mic blocked), so "Speak" looked
-  // like it "ended right after clicking" with no explanation. Now it
-  // keeps listening across pauses (continuous + interim results), shows
-  // live status, and explains exactly what went wrong.
   function listen() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR) {
+      setMicStatus('Speech recognition isn’t available here — type your need, then tap “Answer out loud”.');
+      return;
+    }
+
+    // Tear down any prior session so a stuck recognizer can’t block Speak.
+    stopListening('quiet');
+    stopAnswerAudio();
+
     const rec = new SR();
     recRef.current = rec;
     rec.lang = 'en-US';
@@ -75,7 +122,8 @@ export default function Home() {
     rec.onresult = (e: any) => {
       let finalText = '';
       let interimText = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      // Rebuild from the full result list so pauses don’t wipe earlier words.
+      for (let i = 0; i < e.results.length; i++) {
         const transcript = e.results[i][0].transcript;
         if (e.results[i].isFinal) finalText += transcript;
         else interimText += transcript;
@@ -83,20 +131,35 @@ export default function Home() {
       const heard = (finalText || interimText).trim();
       if (heard) {
         setQuery(heard);
-        setMicStatus(finalText ? 'Heard you — tap “Ask out loud” to get the answer.' : 'Listening… keep talking.');
+        setMicStatus(finalText
+          ? 'Heard you — tap “Answer out loud” for the spoken reply.'
+          : 'Listening… keep talking.');
       }
     };
     rec.onend = () => {
+      if (recRef.current !== rec) return;
       // Chrome ends a session after a pause even in continuous mode —
-      // restart while the user still wants to talk, so it never looks
-      // like it died right after clicking.
+      // restart while the user still wants to talk.
       if (wantListeningRef.current) {
-        try { rec.start(); return; } catch { /* already started */ }
+        try { rec.start(); return; } catch {
+          setTimeout(() => {
+            if (wantListeningRef.current && recRef.current === rec) {
+              try { rec.start(); } catch {
+                wantListeningRef.current = false;
+                setListening(false);
+                setMicStatus('Mic paused — tap Speak to start again.');
+              }
+            }
+          }, 200);
+          return;
+        }
       }
       setListening(false);
     };
     rec.onerror = (e: any) => {
+      if (recRef.current !== rec) return;
       const code = e?.error || 'unknown';
+      if (code === 'aborted') return; // stopListening / Answer out loud
       if (code === 'not-allowed' || code === 'service-not-allowed') {
         wantListeningRef.current = false;
         setListening(false);
@@ -107,33 +170,46 @@ export default function Home() {
         setMicStatus('No microphone found — check the mic is plugged in / selected, then tap Speak again.');
       } else if (code === 'no-speech') {
         setMicStatus('Didn\'t hear anything — speak a little louder and closer to the mic. Still listening…');
-      } else if (code === 'aborted') {
-        // User tapped Stop; not an error.
       } else {
-        setMicStatus(`Mic error (${code}) — tap Speak again, or just type and tap “Ask out loud”.`);
+        wantListeningRef.current = false;
+        setListening(false);
+        setMicStatus(`Mic error (${code}) — tap Speak again, or type and tap “Answer out loud”.`);
       }
     };
+
     wantListeningRef.current = true;
     setListening(true);
-    setMicStatus('Listening… speak now — tap Stop when you\'re done.');
+    setMicStatus('Listening… speak now — tap Stop when you’re done.');
     try {
       rec.start();
     } catch {
       // start() throws if a previous session is still winding down.
-      setTimeout(() => { try { rec.start(); } catch { setListening(false); } }, 250);
+      setTimeout(() => {
+        if (!wantListeningRef.current || recRef.current !== rec) return;
+        try {
+          rec.start();
+        } catch {
+          wantListeningRef.current = false;
+          setListening(false);
+          setMicStatus('Couldn’t start the mic — tap Speak again.');
+        }
+      }, 280);
     }
   }
 
-  function stopListening() {
-    wantListeningRef.current = false;
-    try { recRef.current?.stop(); } catch { /* already stopped */ }
-    setListening(false);
-    setMicStatus((s) => (s && s.startsWith('Heard you') ? s : 'Stopped listening — tap “Ask out loud” to get the answer.'));
-  }
-
   async function ask() {
+    stopListening('answer');
+    stopAnswerAudio();
     setLoading(true);
     setAnswer('');
+    setResources([]);
+    setAudioUrl(null);
+    setFallbackAudio(false);
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 45000);
     try {
@@ -149,9 +225,9 @@ export default function Home() {
       if (data.audioBase64) {
         const blob = new Blob([Uint8Array.from(atob(data.audioBase64), (c) => c.charCodeAt(0))], { type: 'audio/mpeg' });
         const url = URL.createObjectURL(blob);
+        blobUrlRef.current = url;
         setAudioUrl(url);
         setFallbackAudio(false);
-        new Audio(url).play();
       } else {
         // Live TTS flaked — play the pre-recorded fallback for this type
         // (public/fallback-audio/*.mp3) so the demo still speaks.
@@ -159,7 +235,6 @@ export default function Home() {
         const url = `/fallback-audio/${t}.mp3`;
         setAudioUrl(url);
         setFallbackAudio(true);
-        new Audio(url).play().catch(() => {});
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') {
@@ -212,18 +287,18 @@ export default function Home() {
             aria-busy={loading}
           >
             <span className="vb-btn-icon" aria-hidden>{loading ? '…' : '🔊'}</span>
-            {loading ? 'Finding help…' : 'Ask out loud'}
+            {loading ? 'Finding help…' : 'Answer out loud'}
           </button>
           {micSupported ? (
             <button
               type="button"
               className={`vb-btn vb-btn-mic${listening ? ' is-on' : ''}`}
-              onClick={listening ? stopListening : listen}
+              onClick={() => (listening ? stopListening('user') : listen())}
               aria-pressed={listening}
-              title={listening ? 'Stop listening' : 'Speak your need into the mic'}
+              title={listening ? 'Stop the microphone' : 'Fill the box with your voice'}
             >
               <span className="vb-btn-icon" aria-hidden>{listening ? '■' : '🎤'}</span>
-              {listening ? 'Stop' : 'Speak'}
+              {listening ? 'Stop mic' : 'Speak'}
             </button>
           ) : null}
         </div>
@@ -236,42 +311,42 @@ export default function Home() {
         )}
 
         <div className="vb-shortcuts">
-          <p className="vb-label-sm">Try a need</p>
-          <div className="vb-chip-row" role="group" aria-label="Quick need examples">
+          <p className="vb-label-sm">Fill examples (does not answer yet)</p>
+          <div className="vb-chip-row" role="group" aria-label="Fill the text box with an example need">
             <button
               type="button"
               className="vb-chip food"
               onClick={() => setQuery('I need free food near La Jolla today')}
-              title="Fill: free food near La Jolla"
+              title="Only fills the text box — then tap Answer out loud"
             >
-              <span aria-hidden>🍲</span> Food
+              <span aria-hidden>🍲</span> Food example
             </button>
             <button
               type="button"
               className="vb-chip shelter"
               onClick={() => setQuery('I need a shelter in Downtown tonight')}
-              title="Fill: shelter in Downtown"
+              title="Only fills the text box — then tap Answer out loud"
             >
-              <span aria-hidden>🏠</span> Shelter
+              <span aria-hidden>🏠</span> Shelter example
             </button>
             <button
               type="button"
               className="vb-chip clinic"
               onClick={() => setQuery('I need a free clinic near City Heights')}
-              title="Fill: free clinic near City Heights"
+              title="Only fills the text box — then tap Answer out loud"
             >
-              <span aria-hidden>✚</span> Clinic
+              <span aria-hidden>✚</span> Clinic example
             </button>
           </div>
-          <p className="vb-label-sm">Near</p>
-          <div className="vb-chip-row" role="group" aria-label="Quick area examples">
+          <p className="vb-label-sm">Fill area into a food example</p>
+          <div className="vb-chip-row" role="group" aria-label="Fill the text box with a food need near an area">
             {['La Jolla', 'Downtown', 'City Heights'].map((area) => (
               <button
                 key={area}
                 type="button"
                 className="vb-chip area"
                 onClick={() => setQuery(`I need free food near ${area} today`)}
-                title={`Fill: free food near ${area}`}
+                title={`Only fills the text box with food near ${area}`}
               >
                 <span aria-hidden>📍</span> {area}
               </button>
@@ -284,7 +359,11 @@ export default function Home() {
         <section className="vb-answer" aria-live="polite" aria-label="Spoken answer">
           <div className="vb-answer-head">
             <h2>Your spoken answer</h2>
-            {audioUrl && <span className="vb-playing-tag">Audio ready</span>}
+            {audioUrl && (
+              <span className="vb-playing-tag" aria-live="polite">
+                {audioPlaying ? 'Speaking now' : 'Paused — use player to replay'}
+              </span>
+            )}
           </div>
           <p className="vb-answer-text">{answer}</p>
           {fallbackAudio && (
@@ -292,8 +371,16 @@ export default function Home() {
           )}
           {audioUrl && (
             <div className="vb-audio">
-              <label className="vb-label-sm" htmlFor="answer-audio">Replay aloud</label>
-              <audio id="answer-audio" controls src={audioUrl} />
+              <label className="vb-label-sm" htmlFor="answer-audio">Same audio (pause / replay)</label>
+              <audio
+                id="answer-audio"
+                ref={audioRef}
+                controls
+                src={audioUrl}
+                onPlay={() => setAudioPlaying(true)}
+                onPause={() => setAudioPlaying(false)}
+                onEnded={() => setAudioPlaying(false)}
+              />
             </div>
           )}
         </section>
@@ -329,7 +416,7 @@ export default function Home() {
                         <span aria-hidden>📞</span> Call {r.phone}
                       </a>
                     ) : (
-                      <span className="vb-link-btn disabled" title="No phone listed">Phone not listed</span>
+                      <p className="vb-card-meta">Phone not listed</p>
                     )}
                     {r.website && (
                       <a
@@ -433,6 +520,7 @@ export default function Home() {
           font-size: 1rem;
           font-weight: 600;
           color: var(--ink);
+          pointer-events: none; /* legend only — not clickable */
         }
         .vb-mission-pills .dot {
           display: inline-block;
@@ -625,6 +713,8 @@ export default function Home() {
           background: #eaf6ef;
           padding: 6px 10px;
           border-radius: 999px;
+          cursor: default;
+          pointer-events: none; /* status text, not a control */
         }
         .vb-answer-text {
           margin: 0;
@@ -723,12 +813,6 @@ export default function Home() {
           color: var(--shelter);
           border-color: color-mix(in srgb, var(--shelter) 35%, white);
         }
-        .vb-link-btn.disabled {
-          background: rgba(20, 35, 43, 0.06);
-          color: var(--muted);
-          cursor: default;
-        }
-
         .vb-footer {
           margin-top: 40px;
           padding-top: 18px;
