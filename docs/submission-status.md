@@ -1,4 +1,4 @@
-# Submission status — Sat Nov 14, 7:10 PM (America/Los_Angeles)
+# Submission status — Sat Nov 14, 7:56 PM (America/Los_Angeles)
 
 Checked this run against the live repo copy in this workspace and the
 main-chat record. The SpaceXSI paragraph in the Devpost draft is TRUE.
@@ -65,7 +65,8 @@ successful live Gemini call.
   (mechanical keyboard).
 - Promo redeemed ~4:56 PM (free month of X Premium). Cursor Pro is
   running and has done real work: ran the Gemini test script, did the
-  UI polish (merged 374a83f) and the mic fix (2064d48, awaiting merge).
+  UI polish (merged 374a83f), the mic fix + VoiceTide art (merged
+  68d6489, build verified clean).
 - Grok Bot CONFIRMED working ~5:10 PM: it triaged issue #1 (Bright
   Data scrape 400) — created the `data` label, posted a fix plan as an
   issue comment (verified live on GitHub, comment 6887126309). Its plan
@@ -75,18 +76,23 @@ successful live Gemini call.
   704fc51 to match this reality. Remaining SpaceXSI bit: tick the
   raffle box on Devpost at submission time.
 
-## Bright Data — the one gate only Cici can clear
+## Bright Data — zone FIXED ~7:55 PM, extraction now the bottleneck
 - Scrape run ~1:55 PM: all 3 sources failed identically
   "Bright Data failed: 400", 0 listings upserted. Diagnosis: the Web
-  Unlocker zone `voicebridge_sd` most likely does not exist yet
-  (a bad key would be 401). Grok Bot's independent triage of issue #1
-  reached the same conclusion.
-- Fix, on her laptop/dashboard only: brightdata.com/cp/zones →
-  create a Web Unlocker zone named exactly `voicebridge_sd`, then
-  `npm run scrape`. A successful scrape adds up to 5 fresh listings
-  per source (3 sources). Until that rerun succeeds, the demo runs on
-  the 12 seeded Neon rows — so the video must not claim "live scraped
-  today" unless a scrape actually succeeds.
+  Unlocker zone `voicebridge_sd` did not exist yet (a bad key would be
+  401). Grok Bot's independent triage of issue #1 reached the same
+  conclusion.
+- ~7:55 PM: Cici created the zone and reran `npm run scrape`. The 400
+  is GONE — all 3 sources fetch cleanly now. But every source returned
+  "Extracted 0 listings / Upserted 0". The extraction step
+  (`extractListingsFromHtml`) uses Gemini to read the HTML, and Gemini
+  has been 503ing / hanging all day — that is the likely cause.
+- Next check: run `npx tsx scripts/test-gemini.ts`. If it prints OK,
+  rerun `npm run scrape` — extraction may just work. If it fails, stop
+  chasing it: the demo runs on the 12 seeded Neon rows, and the scrape
+  running clean (no errors) is still a good thing to show the Bright
+  Data judge. Do NOT claim "live scraped today" in the video unless a
+  scrape actually upserts listings.
 - `docs/devpost-draft.md` says "This is not mock data — it's live web
   data" — true only after a successful scrape. Same caveat for the
   video script line "This is live data from today, not fake data."
@@ -103,18 +109,21 @@ successful live Gemini call.
 - Final Devpost: 12:00 PM, no changes after; no commits after 12:00 PM
 - Judging: 12:30–2:30 PM, Qualcomm Room, 3 min + 2 min Q&A per judge
 
-## Tonight — Sat 7:10–10:00 PM run order (do the gates first)
-1. Merge the mic-fix branch (commands already given), push, then
-   `git pull origin main` in the INNER folder, restart dev (port 3001).
-2. Create the Bright Data zone `voicebridge_sd`, then `npm run scrape`.
-   ~10 min. If the scrape still 400s, stop chasing it — seeded data
-   carries the demo; show scraper logs to the Bright Data judge instead.
+## Tonight — Sat 7:56–10:00 PM run order
+1. Mic fix + VoiceTide are MERGED (68d6489, build verified clean).
+   Still to do: `git pull origin main` in the INNER folder, restart
+   dev (port 3001), test.
+2. Bright Data zone is CREATED and the 400 is fixed. Scrape runs but
+   extracts 0 — retry it only after the Gemini test prints OK.
+   Otherwise seeded data carries the demo; show the clean scrape logs
+   to the Bright Data judge instead.
 3. Test 3x — food + shelter + clinic — plus mic in Chrome (transcript
    survives pauses, replay plays one voice) and one Spanish question
    ("Necesito comida gratis cerca de La Jolla"). Retry the Gemini test.
-4. 7:30–8:30 PM dinner (free) — practice the 30-sec pitch out loud
+4. Dinner was served EARLY (5:30 PM) — already eaten. The 7:30–8:30
+   slot is free: use it to practice the 30-sec pitch out loud
    (`docs/pitch-30sec.md`).
-5. 8:30–10:00 PM voice sprint is mostly done already (TTS + mic +
+5. Voice sprint (now–10:00 PM) is mostly done already (TTS + mic +
    fallback audio + single-audio fix); use the slot for bug fixes only,
    then commit + push before the 10:00 PM space close. No new features
    after 10 PM.
