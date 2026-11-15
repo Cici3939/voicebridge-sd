@@ -2,13 +2,24 @@
 // Bright Data + Neon + Gemini + ElevenLabs in one file so it's easy to copy into your repo
 
 import './env';
-import { neon } from '@neondatabase/serverless';
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-export const sql = neon(process.env.DATABASE_URL!);
+// Lazy Neon client so `next build` can collect route data without DATABASE_URL.
+let _sql: NeonQueryFunction<false, false> | null = null;
+export const sql: NeonQueryFunction<false, false> = ((strings: TemplateStringsArray, ...values: any[]) => {
+  if (!_sql) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL is not set');
+    _sql = neon(url);
+  }
+  return _sql(strings, ...values);
+}) as NeonQueryFunction<false, false>;
 
 // --- Gemini: parse intent + summarize ---
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+function getGenAI() {
+  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+}
 
 // Race a promise against a timeout so a slow/hung Gemini call can never
 // freeze the demo — the caller falls back to plain code instead.
@@ -33,7 +44,7 @@ function fallbackParse(query: string) {
 
 export async function parseQuery(query: string) {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+    const model = getGenAI().getGenerativeModel({ model: 'gemini-3.8-flash' });
     const prompt = `
 You are VoiceBridge SD. Parse this request into JSON only, no other text.
 Request: "${query}"
@@ -67,7 +78,7 @@ function templateSummary(resources: any[], language: string = 'en') {
 
 export async function summarizeResources(query: string, resources: any[], language: string = 'en') {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+    const model = getGenAI().getGenerativeModel({ model: 'gemini-3.8-flash' });
     const prompt = `
 You are a kind helper for someone who needs free help in San Diego.
 User asked: "${query}"
@@ -141,7 +152,7 @@ export type ScrapedResource = {
 // This is what makes the Bright Data track real: live web data → Neon rows
 // with a fresh last_scraped timestamp the judge can see.
 export async function extractListingsFromHtml(html: string, sourceUrl: string, type: 'food' | 'shelter' | 'clinic'): Promise<ScrapedResource[]> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+  const model = getGenAI().getGenerativeModel({ model: 'gemini-3.8-flash' });
   const text = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 8000);
   const prompt = `
 Extract real ${type} listings from this scraped page text. Return JSON only, no other text.
