@@ -1,4 +1,4 @@
-# Submission status — Sat Nov 14, 7:56 PM (America/Los_Angeles)
+# Submission status — Sat Nov 14, 7:58 PM (America/Los_Angeles)
 
 Checked this run against the live repo copy in this workspace and the
 main-chat record. The SpaceXSI paragraph in the Devpost draft is TRUE.
@@ -50,14 +50,25 @@ successful live Gemini call.
 - Live behaviour ~2:08–2:11 PM: BOTH Gemini calls hit their timeout and
   fell back (keyword parsing + template summary). The demo still works
   and speaks, but Gemini did not produce the live answer.
-- Test run in Cursor ~5:04 PM: `npx tsx scripts/test-gemini.ts`
-  FAILED after 11,063 ms with 503 Service Unavailable — the model is
-  experiencing high demand, temporary per Google. Not wifi, not the key,
-  not a code bug: the request reached Google and Google answered.
+- Test run ~5:04 PM: `npx tsx scripts/test-gemini.ts` FAILED after
+  11,063 ms with 503 Service Unavailable — the model was experiencing
+  high demand, temporary per Google. Not wifi, not the key, not a code
+  bug: the request reached Google and Google answered.
+- Test run ~7:57 PM: FAILED after 160 ms with **429 Too Many Requests
+  — quota exceeded**. The free tier allows only **20 generate-content
+  requests per day** for gemini-3.8-flash, and today's testing + scrapes
+  used them all. Retry in ~4h (resets ~midnight). This ALSO explains the
+  scrape's 0 listings: extraction uses Gemini too, so it hit the same
+  wall. The code is fine; the quota is the limit.
+- Sunday quota budget: 20 fresh requests. Each Ask = 2 (parse +
+  summary). Test once, scrape once, save the rest for the video +
+  judging demos — do not burn requests on casual re-tests. Option:
+  a second Gemini key in a new Google project tonight for a fresh 20.
 - Before the video / Gemini judge pitch, either get a Gemini call to
-  return OK (retry the test script later), or be honest that the
-  fallback carried the demo. Do not claim in the video that Gemini
-  summarized that exact answer unless a live call is observed doing so.
+  return OK (retry the test script after the reset, or with a second
+  key), or be honest that the fallback carried the demo. Do not claim
+  in the video that Gemini summarized that exact answer unless a live
+  call is observed doing so.
 
 ## SpaceXSI — CONFIRMED DONE (~5:10 PM)
 - Qualification is workflow-based: Cursor as core AI coding agent +
