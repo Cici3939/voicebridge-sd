@@ -1,4 +1,4 @@
-# Submission status — Sat Nov 14, 2:33 PM (America/Los_Angeles)
+# Submission status — Sat Nov 14, 4:33 PM (America/Los_Angeles)
 
 Checked this run against the live repo copy in this workspace and the
 main-chat record. Do NOT submit the Devpost draft as-is — two claims in it
@@ -7,9 +7,23 @@ are not true yet (see below).
 ## What works right now
 - End-to-end demo confirmed ~2:11 PM: Ask takes ~11 sec, answer speaks
   out loud via ElevenLabs. Neon has the 12 seeded resources.
+- Since then, while Cici was at the social / Gilder Port: Spanish answers
+  end to end, area chips (La Jolla / Downtown / City Heights), live-data
+  footer (resource count + newest last_scraped), tel: + website links on
+  cards, fade-up + pulsing-mic animations — pushed as commit 2c56d95.
+  Voice sprint is therefore mostly done early; tonight is build check +
+  the two gates only Cici can clear (below).
+- Build re-verified 4:33 PM on the workspace copy: with a dummy
+  DATABASE_URL it compiles clean, routes /, /api/ask, /api/resources
+  present. (Without any DATABASE_URL the build fails at page-data
+  collection for /api/ask — expected in this copy, which has no
+  .env.local; her laptop has the real one, so it builds there.)
 - `docs/devpost-draft.md` and `docs/video-script.md` already exist, plus
-  `docs/judge-pitches.md`. Start from those — do not rewrite from scratch.
-- GitHub: https://github.com/Cici3939/voicebridge-sd — latest commit b385d24 (README polish); fallback-audio + mic button landed in aeffa94 / afb49f3.
+  `docs/judge-pitches.md` (status header refreshed 4:33 PM with the
+  Spanish note). Start from those — do not rewrite from scratch.
+- GitHub: https://github.com/Cici3939/voicebridge-sd — latest commit
+  2c56d95. This status file + judge-pitches update are local-only until
+  pushed.
 
 ## Gemini — yes, planned and in the code, but not live in the demo
 - `lib/voicebridge.ts`: `parseQuery` + `summarizeResources` call
@@ -22,17 +36,26 @@ are not true yet (see below).
   Do not claim in the video that Gemini summarized that exact answer
   unless a live call is observed doing so.
 
-## SpaceXSI — yes, planned, NOT set up yet
+## SpaceXSI — promo code GOT (~4:06 PM), setup still NOT done
 - Qualification is workflow-based: Cursor as core AI coding agent +
   Grok Bot automation, describe both in Devpost, opt in to the raffle
   (mechanical keyboard).
-- No Cursor Pro / Grok Bot setup has been confirmed. The workshop is
-  TODAY Sat 2:45–3:15 PM, WLH 2207 — leave ~2:35, bring laptop, ask the
-  MLH Coach for the X Premium promo code if Cici has none in email.
+- Cici got the promo code at ~4:06 PM, but as of 4:33 PM she has NOT
+  confirmed redeeming it, and no Cursor Pro / Grok Bot setup has been
+  confirmed. Do this FIRST when back at the laptop, before any more
+  coding: redeem the free month of X Premium via the email claim link,
+  claim Cursor Pro through the X Premium benefit, download Cursor,
+  open voicebridge-sd in Cursor, switch on the Grok Bot automation
+  (auto-summarize-scrapes). Only then do the remaining coding in Cursor.
 - `docs/devpost-draft.md` currently describes the Grok Bot automation in
   the present tense ("Grok Bot watches our repo… We used Cursor + Grok
   Bot throughout the weekend"). That is aspirational, not done — fix
-  that paragraph after the workshop, before submitting.
+  that paragraph after setup is confirmed, before submitting.
+- Note: the Spanish / chips / footer work in commit 2c56d95 was done by
+  Muse while Cici was out, NOT in Cursor. The Cursor tasks still to do
+  in Cursor are #1 (run `npx tsx scripts/test-gemini.ts`) and #2
+  (check /api/resources?type=food returns live Neon rows) — doing those
+  two in Cursor is what makes the Cursor claim real.
 
 ## Bright Data — the one gate only Cici can clear
 - Scrape run ~1:55 PM: all 3 sources failed identically
@@ -60,9 +83,19 @@ are not true yet (see below).
 - Final Devpost: 12:00 PM, no changes after; no commits after 12:00 PM
 - Judging: 12:30–2:30 PM, Qualcomm Room, 3 min + 2 min Q&A per judge
 
-## Next-hours split (from Cici's 2:33 PM message)
-- Cici: 2:45 SpaceXSI workshop; create the Bright Data zone; rerun scrape.
-- Muse: while she is at the workshop, fix the two Devpost claims above,
-  tighten the video script to what the demo actually does, and keep
-  working the data sprint (scraper code is ready in `scripts/scrape.ts` —
-  it only needs the zone to exist).
+## Tonight — Sat 5:00–10:00 PM run order (do the gates first)
+1. 5:00 PM — redeem promo → Cursor Pro + Grok Bot (above). ~15 min.
+2. Create the Bright Data zone `voicebridge_sd`, then `npm run scrape`.
+   ~10 min. If the scrape still 400s, stop chasing it — seeded data
+   carries the demo; show scraper logs to the Bright Data judge instead.
+3. In Cursor: task #1 Gemini test, task #2 /api/resources check.
+4. `git pull origin main`, restart dev (inner folder, port 3001), test
+   3x — food + shelter + clinic — plus mic in Chrome and one Spanish
+   question ("Necesito comida gratis cerca de La Jolla").
+5. 7:30–8:30 PM dinner (free) — practice the 30-sec pitch out loud
+   (`docs/pitch-30sec.md`).
+6. 8:30–10:00 PM voice sprint is mostly done already (TTS + mic +
+   fallback audio); use the slot for bug fixes only, then commit +
+   push before the 10:00 PM space close. No new features after 10 PM.
+7. Sun: video 10:00–11:00 AM, initial Devpost by 11:00 AM, final by
+   12:00 PM, judging 12:30–2:30 PM. No commits after Sun 12:00 PM.

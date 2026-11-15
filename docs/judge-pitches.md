@@ -1,6 +1,6 @@
 # Judge Pitches — 3 min present + 2 min Q&A each
 
-> STATUS Sat 2:45pm: demo works end to end (~11 sec, speaks out loud), mic button added (Chrome/Edge Web Speech API — judge can speak their own query). Bright Data live scrape still blocked on the missing `voicebridge_sd` zone — if it's still blocked at judging, show the seeded real listings + scraper logs and say so honestly.
+> STATUS Sat 4:33pm: demo works end to end (~11 sec, speaks out loud), mic button fixed (keeps listening across pauses, red Stop button, on-screen mic errors), Spanish answers + area chips + live-data footer added (commit 2c56d95 — test the Spanish question before claiming it to judges). Bright Data live scrape still blocked on the missing `voicebridge_sd` zone — if it's still blocked at judging, show the seeded real listings + scraper logs and say so honestly. SpaceXSI promo code obtained ~4:06pm; Cursor Pro + Grok Bot setup still to confirm — don't claim Grok Bot until it is actually switched on.
 
 You get a different judge per track. Don't give the same pitch to everyone. Lead with what THEY care about.
 
@@ -21,6 +21,7 @@ Lead: "Voice is the product, not an add-on."
 Demo: Let THEM speak. Hand them the mic: "Try it — say you need a clinic near City Heights."
 Let ElevenLabs speak the answer. That's your whole demo.
 Say: "This is for people who can't read English well or can't see a screen well. The voice IS the accessibility."
+Spanish bonus (only if the Spanish test passes tonight): ask "Necesito comida gratis cerca de La Jolla" and let it answer in Spanish — same pipeline, eleven_multilingual_v2 speaks it.
 Q&A prep: Which voice/model? → eleven_multilingual_v2, stability 0.5. Why voice over text? → literacy + vision + crisis.
 
 ## 4. Gemini judge (MLH) — Best Use of Gemini API
@@ -28,6 +29,7 @@ Lead: "Gemini does the understanding and the plain-language summary."
 Show: the parseQuery prompt + the summarize prompt in `lib/voicebridge.ts`.
 Say: "Gemini turns 'I need free food near La Jolla' into {type: food, area: La Jolla} and then turns 3 database rows into one 80-word spoken answer a 6th-grader can follow."
 Q&A prep: Which model? → gemini-3.8-flash via Google AI Studio. Why Gemini? → fast, good at structured parsing + summarization.
+Honesty note: live Gemini calls have timed out so far and the keyword/template fallback carried the demo — only claim Gemini produced a specific answer after a live call is observed returning (run `npx tsx scripts/test-gemini.ts` in Cursor tonight).
 
 ## 5. Best Overall / Most Innovative judge
 Lead: "Real problem, working demo, live data."
