@@ -5,6 +5,9 @@
 ## Tagline
 Voice-first help finder for San Diego — speak what you need, hear where to go.
 
+## Elevator pitch
+VoiceBridge SD is a voice-first finder for free food, shelter, and clinics in San Diego. Instead of digging through five websites in English on a small phone, you just speak — "I need free food near La Jolla today" — and hear the answer out loud in plain language, in English or Spanish. It's built for the people the search itself locks out: people who can't easily read, are elderly, or are visually impaired. Real listings from 211 San Diego, Feeding San Diego, and the San Diego Food Bank live in Neon, the request is understood and summarized into simple spoken language, and ElevenLabs speaks it back — so help is one spoken question away.
+
 ## Problem
 Finding free food, shelter, or a clinic in San Diego means digging through 5 different websites, in English, on a small phone. For people who can't easily read English, are elderly, or are visually impaired, that search itself is the barrier.
 
