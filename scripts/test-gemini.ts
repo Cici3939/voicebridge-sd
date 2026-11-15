@@ -1,7 +1,7 @@
 // Cursor task #1 — Test live Gemini (20 min)
 // Run in Cursor's terminal, from the inner voicebridge-sd folder:
 //   npx tsx scripts/test-gemini.ts
-// This calls gemini-2.5-flash directly (no Neon, no TTS) and prints
+// This calls gemini-3.8-flash directly (no Neon, no TTS) and prints
 // exactly what came back and how long it took. If it returns JSON in
 // under ~15s, a live Gemini call works and we can honestly claim it to
 // the Gemini judge. If it times out / errors, the keyword fallback
@@ -9,7 +9,7 @@
 import '../lib/env';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-3.8-flash';
 const QUERY = process.argv[2] || 'I need free food near La Jolla today';
 
 async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {

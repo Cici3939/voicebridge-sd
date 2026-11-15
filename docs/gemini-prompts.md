@@ -9,7 +9,7 @@ Request: "<user query>"
 Return: {"type": "food" | "shelter" | "clinic", "area": "La Jolla" | "Downtown" | "San Diego" | "North County" | "South San Diego" | "City Heights" | "Logan Heights" | "San Ysidro" | null, "language": "en" | "es"}
 If unclear, type is "food" and area is null.
 ```
-Model: gemini-2.5-flash
+Model: gemini-3.8-flash
 
 Note: if the area has no rows in Neon (e.g. La Jolla has no seed rows), the API falls back to type-only results instead of returning empty — see `getResources` in `lib/voicebridge.ts`.
 
@@ -25,7 +25,7 @@ Start with the closest/best option. Give name, address, and hours.
 Keep it under 80 words. No bullet points, just sentences to be read out loud.
 If no resources, say so kindly and suggest calling 211.
 ```
-Model: gemini-2.5-flash
+Model: gemini-3.8-flash
 
 ## If Gemini is slow / fails
 Fallback: skip summarization, read the top Neon result directly:

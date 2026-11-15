@@ -164,3 +164,5 @@ successful live Gemini call.
    after 10 PM.
 6. Sun: video 10:00–11:00 AM, initial Devpost by 11:00 AM, final by
    12:00 PM, judging 12:30–2:30 PM. No commits after Sun 12:00 PM.
+
+- ~10:30 PM: REVERTED the model switch — gemini-2.5-flash → gemini-3.8-flash (lib/voicebridge.ts 3 call sites + scripts/test-gemini.ts + docs). The 10:25pm test on 2.5-flash failed "fetch failed" after 10,531ms, and the 10:30pm rerun failed fast (505ms) with a 404: "This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash." So 2.5-flash is dead for the new project and Google itself recommends 3.8-flash. The 3.8-flash failures were all transient/environmental (503 high demand, 429 quota on the OLD key, network fetch fails off venue wifi) — none said the model doesn't exist. Sunday morning at the venue: pull, restart dev, test once with the NEW key (fresh quota); if OK, scrape immediately. If 3.8-flash still 503s, the fallback carries the demo.
